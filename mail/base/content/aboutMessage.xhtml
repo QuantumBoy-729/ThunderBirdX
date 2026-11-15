@@ -44,6 +44,8 @@
   <link rel="stylesheet" href="chrome://messenger/skin/openpgp/inlineNotification.css" />
   <link rel="stylesheet" href="chrome://messenger/skin/contextMenu.css" />
   <link rel="stylesheet" href="chrome://messenger/skin/autocomplete.css" />
+  <!-- Overhaul (personal fork): keep last so it overrides the styles above. -->
+  <link rel="stylesheet" href="chrome://messenger/skin/overhaul/message.css" />
 
   <link rel="localization" href="branding/brand.ftl" />
   <link rel="localization" href="messenger/messenger.ftl" />
@@ -56,6 +58,7 @@
   <link rel="localization" href="messenger/openpgp/msgReadStatus.ftl" />
   <link rel="localization" href="messenger/smime/smime.ftl" />
   <link rel="localization" href="messenger/messageheader/headerFields.ftl" />
+  <link rel="localization" href="messenger/overhaul.ftl" />
 
   <script defer="defer" src="chrome://messenger/content/globalOverlay.js"></script>
   <script defer="defer" src="chrome://global/content/contentAreaUtils.js"></script>
@@ -80,6 +83,7 @@
   <script defer="defer" src="chrome://messenger/content/mailCommon.js"></script>
   <script defer="defer" src="chrome://messenger/content/msgHdrView.js"></script>
   <script defer="defer" src="chrome://messenger/content/aboutMessage.js"></script>
+  <script defer="defer" src="chrome://messenger/content/overhaulQuickReply.js"></script>
   <script type="module" src="chrome://messenger/content/attachment-list.mjs"></script>
   <script type="module" src="chrome://messenger/content/lazy-findbar.mjs"></script>
 </head>
@@ -156,6 +160,21 @@
         <vbox id="attachmentView" collapsed="collapsed">
 #include msgAttachmentView.inc.xhtml
         </vbox>
+        <!-- Overhaul (personal fork): quick reply. -->
+        <html:form id="overhaulQuickReply" hidden="hidden"
+                   onsubmit="event.preventDefault();">
+          <html:textarea id="overhaulQuickReplyInput"
+                         rows="1"
+                         data-l10n-id="overhaul-quick-reply-input"></html:textarea>
+          <html:div id="overhaulQuickReplyActions">
+            <html:span id="overhaulQuickReplyHint"
+                       data-l10n-id="overhaul-quick-reply-hint"></html:span>
+            <html:button id="overhaulQuickReplySend"
+                         type="button"
+                         class="primary"
+                         data-l10n-id="overhaul-quick-reply-send"></html:button>
+          </html:div>
+        </html:form>
         <html:lazy-findbar id="findToolbar" browserid="messagepane"/>
       </vbox>
 #include msgSecurityPane.inc.xhtml

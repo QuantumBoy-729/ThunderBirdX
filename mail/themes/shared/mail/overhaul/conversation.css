@@ -1,0 +1,109 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * Overhaul conversation view (personal fork). Loaded inside the
+ * conversation-view shadow root after conversation-view.css, which already
+ * imports the design tokens.
+ */
+
+.overhaul-avatar {
+  display: none;
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("mail.overhaul.enabled") {
+  @media not (prefers-contrast) {
+    :host {
+      background-color: var(--layout-background-0);
+    }
+
+    header {
+      padding: 14px 16px 10px;
+      background: var(--layout-background-0);
+      border-block-end-color: var(--layout-border-0);
+
+      & .title {
+        font-size: 1.45rem;
+        font-weight: 600;
+      }
+
+      & .counts .total {
+        font-weight: 600;
+      }
+
+      & .counts .details {
+        color: var(--color-text-muted);
+      }
+    }
+
+    #mainConversation {
+      gap: 6px;
+      padding: 8px;
+
+      & article {
+        border-radius: var(--overhaul-radius-medium);
+
+        & + article {
+          border-block-start: none;
+        }
+
+        /* Collapsed messages: avatar, author and date, snippet underneath. */
+        &[aria-expanded="false"] {
+          grid-template-columns: auto 1fr max-content;
+          grid-template-areas:
+            "avatar author time"
+            "avatar snippet snippet";
+          column-gap: 10px;
+          row-gap: 2px;
+          padding: 10px 12px;
+          background-color: var(--layout-background-1);
+
+          &:hover {
+            background-color: var(--layout-background-2);
+          }
+
+          & .overhaul-avatar {
+            grid-area: avatar;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            inline-size: 32px;
+            block-size: 32px;
+            border-radius: 50%;
+            background-color: light-dark(hsl(var(--avatar-hue, 215) 65% 91%), hsl(var(--avatar-hue, 215) 30% 28%));
+            color: light-dark(hsl(var(--avatar-hue, 215) 55% 32%), hsl(var(--avatar-hue, 215) 70% 86%));
+            font-size: 0.85rem;
+            font-weight: 600;
+          }
+
+          & address {
+            grid-area: author;
+            font-weight: 600;
+          }
+
+          & time {
+            grid-area: time;
+            color: var(--color-text-muted);
+          }
+
+          & p {
+            grid-area: snippet;
+            color: var(--color-text-secondary);
+          }
+
+          & .info {
+            display: none;
+          }
+        }
+
+        /* The open message shows its own header and quick reply. */
+        &[aria-expanded="true"] {
+          overflow: hidden;
+          border: 1px solid var(--layout-border-0);
+        }
+      }
+    }
+  }
+}

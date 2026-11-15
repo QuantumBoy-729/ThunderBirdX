@@ -94,6 +94,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   MailStringUtils: "resource:///modules/MailStringUtils.sys.mjs",
   MailTelemetry: "moz-src:///comm/mail/modules/MailTelemetry.sys.mjs",
   makeMozIconImageSet: "resource:///modules/MozIconUtils.mjs",
+  QuickReplyStore: "moz-src:///comm/mail/modules/OverhaulUtils.sys.mjs",
   QuoteSanitizer: "resource:///modules/QuoteSanitizer.sys.mjs",
 });
 
@@ -660,6 +661,21 @@ var stateListener = {
       loadHTMLMsgPrefs();
     }
     AdjustFocus();
+
+    // Overhaul (personal fork): insert text typed in the message pane's quick
+    // reply bar at the reply position chosen by AdjustFocus.
+    const quickReplyText =
+      gMsgCompose.originalMsgURI &&
+      lazy.QuickReplyStore.take(gMsgCompose.originalMsgURI);
+    if (quickReplyText) {
+      const editor = GetCurrentEditor();
+      quickReplyText.split(/\r?\n/).forEach((line, index) => {
+        if (index) {
+          editor.insertLineBreak();
+        }
+        editor.insertText(line);
+      });
+    }
   },
 
   NotifyComposeBodyReadyNew() {

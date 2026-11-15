@@ -8,6 +8,7 @@ MOZ_SRC_FILES += [
     "DragUtils.sys.mjs",
     "MailTelemetry.sys.mjs",
     "MessageSaver.sys.mjs",
+    "OverhaulUtils.sys.mjs",
     "QRExport.sys.mjs",
 ]
 

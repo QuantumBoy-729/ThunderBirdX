@@ -8,6 +8,7 @@
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   DisplayNameUtils: "resource:///modules/DisplayNameUtils.sys.mjs",
+  getAvatarData: "moz-src:///comm/mail/modules/OverhaulUtils.sys.mjs",
   Gloda: "resource:///modules/gloda/GlodaPublic.sys.mjs",
   makeFriendlyDateAgo: "resource:///modules/TemplateUtils.sys.mjs",
   MsgHdrToMimeMessage: "resource:///modules/gloda/MimeMessage.sys.mjs",
@@ -56,6 +57,12 @@ class ConversationView extends HTMLElement {
     style.rel = "stylesheet";
     style.href = "chrome://messenger/skin/conversation-view.css";
     shadowRoot.appendChild(style);
+
+    // Overhaul (personal fork) styles, gated by mail.overhaul.enabled.
+    const overhaulStyle = document.createElement("link");
+    overhaulStyle.rel = "stylesheet";
+    overhaulStyle.href = "chrome://messenger/skin/overhaul/conversation.css";
+    shadowRoot.appendChild(overhaulStyle);
 
     // Load the template.
     const template = document.getElementById("conversationViewTemplate");
@@ -236,6 +243,14 @@ class ConversationView extends HTMLElement {
       message.mime2DecodedAuthor,
       "from"
     );
+
+    // Overhaul (personal fork): letter avatar for the author.
+    const avatar = article.querySelector(".overhaul-avatar");
+    if (avatar) {
+      const { initials, hue } = lazy.getAvatarData(message.mime2DecodedAuthor);
+      avatar.textContent = initials;
+      avatar.style.setProperty("--avatar-hue", hue);
+    }
 
     const dateElement = article.querySelector("time");
     const date = new Date(message.date / 1000);

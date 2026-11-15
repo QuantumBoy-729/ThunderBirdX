@@ -12,7 +12,8 @@
 
 /* The quick action buttons live in the card template unconditionally, so hide
  * them unless the overhaul is enabled. */
-.overhaul-quick-actions {
+.overhaul-quick-actions,
+.overhaul-avatar {
   display: none;
 }
 
@@ -110,6 +111,46 @@
         &[data-properties~="unread"] .card-container .subject {
           color: var(--color-text-base);
         }
+      }
+
+      /* Sender avatar in place of the read status column. Card height is set
+       * in JS, so the avatar has to fit inside the existing rows. */
+      & .card-layout:not([data-properties~="dummy"]) .read-status-column {
+        inline-size: 32px;
+        justify-content: center;
+        margin-inline-end: 6px;
+      }
+
+      & .card-layout:not([data-properties~="dummy"]) .overhaul-avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 32px;
+        block-size: 32px;
+        border-radius: 50%;
+        background-color: light-dark(hsl(var(--avatar-hue, 215) 65% 91%), hsl(var(--avatar-hue, 215) 30% 28%));
+        color: light-dark(hsl(var(--avatar-hue, 215) 55% 32%), hsl(var(--avatar-hue, 215) 70% 86%));
+        font-size: 0.85rem;
+        font-weight: 600;
+        line-height: 1;
+        user-select: none;
+      }
+
+      /* Compact 2-row cards don't have room for a full-size avatar. */
+      &.cards-row-compact .card-layout:not([data-properties~="dummy"]) {
+        & .read-status-column {
+          inline-size: 24px;
+        }
+
+        & .overhaul-avatar {
+          inline-size: 24px;
+          block-size: 24px;
+          font-size: 0.7rem;
+        }
+      }
+
+      & .card-layout .read-status {
+        display: none;
       }
 
       /* Hover quick actions replace the date and menu button. */

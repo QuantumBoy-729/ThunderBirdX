@@ -1593,7 +1593,8 @@ pref("mail.experimental_features_settings.enabled", true);
 
 #ifdef NIGHTLY_BUILD
 // Enable the new experimental conversation view based on Gloda.
-pref("mail.thread.conversation.enabled", false);
+// Personal fork: on by default.
+pref("mail.thread.conversation.enabled", true);
 #endif
 
 // Enable the conversion to dark mode for all messages when using a dark theme.

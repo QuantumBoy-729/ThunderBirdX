@@ -2800,6 +2800,15 @@ const gHeaderCustomize = {
         Services.xulStore.getValue(this.docURL, "messageHeader", "layout")
       );
       this.updateLayout();
+    } else if (Services.prefs.getBoolPref("mail.overhaul.enabled", false)) {
+      // Overhaul (personal fork): until the user customizes the header, lead
+      // with a big sender avatar and use icon-only action buttons.
+      this.customizeData = {
+        ...this.customizeData,
+        showBigAvatar: true,
+        buttonStyle: "only-icons",
+      };
+      this.updateLayout();
     }
   },
 

@@ -6,6 +6,10 @@ import { TreeViewTableRow } from "chrome://messenger/content/tree-view.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://messenger/content/thread-card-tags.mjs";
 
+const { getAvatarData, isOverhaulEnabled } = ChromeUtils.importESModule(
+  "moz-src:///comm/mail/modules/OverhaulUtils.sys.mjs"
+);
+
 /**
  * The tr element row of the TreeView table for the cards view layout.
  * NOTE: The main child is a clone of the `#threadPaneCardTemplate` template.
@@ -41,6 +45,7 @@ class ThreadCard extends TreeViewTableRow {
     this.twistyButton = this.querySelector("button.twisty");
     this.sortHeaderDetails = this.querySelector(".sort-header-details");
     this.statusIndicator = this.querySelector(".read-status");
+    this.avatar = this.querySelector(".overhaul-avatar");
   }
 
   fillRow() {
@@ -124,6 +129,13 @@ class ThreadCard extends TreeViewTableRow {
 
     this.senderLine.textContent = data.sender;
     this.senderLine.title = data.sender;
+
+    // Overhaul (personal fork): letter avatar for the sender.
+    if (isOverhaulEnabled()) {
+      const { initials, hue } = getAvatarData(data.sender);
+      this.avatar.textContent = initials;
+      this.avatar.style.setProperty("--avatar-hue", hue);
+    }
     this.dateLine.textContent = data.date;
 
     this.threadCardTags.setAttribute("tags", data.tagKeys);
