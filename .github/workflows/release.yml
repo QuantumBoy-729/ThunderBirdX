@@ -52,10 +52,18 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           df -h /
 
+      # The runner is a throwaway VM. Real-time scanning of the ~400,000 files
+      # in the Firefox checkout and build roughly doubles the time spent on
+      # file writes.
+      - name: Turn off Defender real-time scanning (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-MpPreference -DisableRealtimeMonitoring $true
+
       # mach finds prebuilt binaries by walking recent comm commits, so it needs
       # a few hundred commits of history.
       - name: Check out ThunderBirdX
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: firefox/comm
           fetch-depth: 600
@@ -131,7 +139,7 @@ jobs:
           ls -la "$GITHUB_WORKSPACE/out"
           [ -n "$(ls -A "$GITHUB_WORKSPACE/out")" ] || { echo "No packages found"; ls -la; exit 1; }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: packages-${{ matrix.platform }}
           path: out/*
@@ -145,9 +153,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: packages-*
           path: out
