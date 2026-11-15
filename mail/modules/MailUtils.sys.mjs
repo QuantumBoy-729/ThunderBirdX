@@ -496,7 +496,7 @@ export var MailUtils = {
         fstream.available()
       );
       headers = lazy.MimeParser.extractHeaders(data);
-    } catch (e) {
+    } catch {
       // Ignore errors on reading the eml or extracting its headers. The test for
       // the X-Unsent header below will fail and the message window will take care
       // of any error handling.
@@ -980,7 +980,13 @@ export var MailUtils = {
 
     // 'news' URIs identifying a newsgroup.
 
-    let identifier = decodeURIComponent(url.pathname.slice(1));
+    let identifier;
+    try {
+      identifier = decodeURIComponent(url.pathname.slice(1));
+    } catch (e) {
+      console.warn(`Malformed news URI: ${uri}`);
+      return;
+    }
     let articleNumber;
     if (isNntp) {
       [identifier, articleNumber] = identifier.split("/");

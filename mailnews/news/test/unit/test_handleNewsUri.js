@@ -174,6 +174,26 @@ add_task(function test_slash_only_pathname() {
   Assert.equal(gConfirmCallCount, 0);
 });
 
+add_task(function test_malformedPercentEncoding() {
+  resetCaptures();
+  MailUtils.handleNewsUri(`news://localhost:${server.port}/test%ZZ`, null);
+  Assert.equal(
+    gFolderUrisOpened.length,
+    0,
+    "A malformed URI should not open a newsgroup folder"
+  );
+  Assert.equal(
+    gEmlFilesOpened.length,
+    0,
+    "A malformed URI should not fetch an article"
+  );
+  Assert.equal(
+    gConfirmCallCount,
+    0,
+    "A malformed URI should not prompt for confirmation"
+  );
+});
+
 add_task(function test_snews_to_news_conversion() {
   resetCaptures();
   MailUtils.handleNewsUri("snews:test.subscribe.simple", null);
