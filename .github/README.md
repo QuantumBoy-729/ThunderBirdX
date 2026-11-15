@@ -39,10 +39,12 @@ upstream fixes.
 | Hover quick actions on messages | ✅ | Archive, mark read or unread, delete |
 | Keyboard shortcuts | ✅ | Customizable, from Thunderbird |
 | Attachment search | ✅ | Via global search, from Thunderbird |
-| Conversation view | 📋 | Builds on Thunderbird's experimental conversation view |
-| Inline reply | 📋 | Reply from the bottom of a conversation |
+| Sender avatars | ✅ | Letter avatars in the message list, conversation view and message header |
+| Simplified message header | ✅ | Large sender avatar and subject, icon-only actions (customizable as before) |
+| Conversation view | 🚧 | Built on Thunderbird's experimental conversation view; on by default in development builds, still being tested |
+| Quick reply | 🚧 | Type under a message to open a pre-filled reply you review before sending; still being tested |
+| Fully inline reply (no separate window) | 📋 | |
 | Speed Reader | 📋 | Word-by-word reading view, roughly 250 to 1,000+ words per minute |
-| Sender avatars in the message list | 📋 | |
 
 ### Interface and customization
 
@@ -80,8 +82,8 @@ features held back. It is open source under the
 2. **App shell** ✅. App rail, toolbar and tabs.
 3. **Folder pane and message list** ✅. Unified folders by default, flat cards,
    hover quick actions.
-4. **Reading pane** 📋. Conversation view, simpler message header, inline reply,
-   sender avatars.
+4. **Reading pane** 🚧. Simpler message header and sender avatars are done;
+   conversation view and quick reply are in testing; fully inline reply is next.
 5. **Sending** 📋. Undo send, scheduled send.
 6. **Triage** 📋. Snooze, Speed Reader.
 7. **Compose and secondary screens** 📋. Matching design for the compose window,
