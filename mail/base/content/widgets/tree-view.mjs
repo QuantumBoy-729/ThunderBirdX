@@ -1565,6 +1565,20 @@ export class TreeView extends BaseTreeView {
           return;
         }
 
+        // Overhaul (personal fork): card quick action.
+        if (event.target.classList.contains("tree-button-archive")) {
+          this.table.body.dispatchEvent(
+            new CustomEvent("request-archive", {
+              bubbles: true,
+              detail: {
+                index,
+              },
+            })
+          );
+          this.ensureCorrectFocus();
+          return;
+        }
+
         if (event.target.classList.contains("tree-button-flag")) {
           this.table.body.dispatchEvent(
             new CustomEvent("toggle-flag", {

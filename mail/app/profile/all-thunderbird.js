@@ -1640,3 +1640,7 @@ pref("widget.macos.native-anchored-menus", false);
 
 // The color used to style primary buttons and elements.
 pref("mail.appearance.accentColor", "accent-color");
+
+// Personal fork: enable the overhauled look (see
+// mail/themes/shared/mail/overhaul/). Set to false for the upstream look.
+pref("mail.overhaul.enabled", true);

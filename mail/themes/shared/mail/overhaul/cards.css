@@ -1,0 +1,178 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * Overhaul folder pane and message list (personal fork).
+ *
+ * Loaded last in about3Pane.xhtml. Card sizes are computed in JS
+ * (threadPane.densityChange), so this file changes colors, borders and radii
+ * but never the block size of a card.
+ */
+
+/* The quick action buttons live in the card template unconditionally, so hide
+ * them unless the overhaul is enabled. */
+.overhaul-quick-actions {
+  display: none;
+}
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("mail.overhaul.enabled") {
+  @media not (prefers-contrast) {
+    :root:not([lwtheme]) {
+      --listbox-border-radius: var(--overhaul-radius-small);
+      --listbox-hover: color-mix(in srgb, currentColor 6%, transparent);
+      --listbox-selected-bg: var(--layout-background-3);
+      --listbox-focused-selected-bg: var(--color-primary-soft);
+      --listbox-selected-color: var(--color-text-base);
+      --listbox-focused-selected-color: var(--color-text-base);
+      --listbox-border-type: solid;
+      --tree-view-bg: var(--layout-background-0);
+      --tree-pane-background: var(--layout-background-0);
+
+      /* Flat cards: no border at rest, soft accent when selected. */
+      --tree-card-background: var(--layout-background-0);
+      --tree-card-border: transparent;
+      --tree-card-border-hover: transparent;
+      --tree-card-border-focus: color-mix(in srgb, var(--color-primary-default) 45%, transparent);
+      --tree-card-border-selected: transparent;
+      --tree-card-border-selected-unfocused: transparent;
+      --tree-card-background-current: var(--layout-background-1);
+      --tree-card-background-selected: var(--color-primary-soft);
+      --tree-card-background-selected-current: var(--color-primary-soft);
+      --tree-card-background-current-unfocused: var(--layout-background-1);
+      --tree-card-background-selected-unfocused: var(--layout-background-2);
+      --tree-card-background-selected-current-unfocused: var(--layout-background-2);
+      --tree-card-background-selected-current-unfocused-hover: var(--layout-background-3);
+
+      /* Unread is shown with an accent bar, not the green dot. */
+      --new-subject-color: var(--color-text-base);
+    }
+
+    /* Folder pane */
+
+    :root:not([lwtheme]) #folderTree {
+      padding-inline: 6px;
+
+      & li > .container {
+        border-radius: var(--overhaul-radius-small);
+      }
+
+      /* Accent text and icon on the focused selection. */
+      &:focus-within li.selected > .container {
+        color: var(--color-primary-default);
+
+        & > .icon {
+          --icon-color: var(--color-primary-default);
+        }
+      }
+
+      & .unread-count {
+        border-radius: 999px;
+      }
+    }
+
+    /* Message list */
+
+    :root:not([lwtheme]) #threadTree[rows="thread-card"] {
+      & > .card-layout > td > .card-container,
+      & .card-layout > td > .card-container {
+        border-radius: var(--overhaul-radius-medium);
+      }
+
+      & .card-layout {
+        /* Accent bar on the inline-start edge of unread cards. */
+        &[data-properties~="unread"] .card-container::before {
+          content: "";
+          position: absolute;
+          inset-inline-start: 0;
+          inset-block: 8px;
+          inline-size: 3px;
+          border-start-end-radius: 3px;
+          border-end-end-radius: 3px;
+          background-color: var(--color-primary-default);
+          z-index: 1;
+        }
+
+        &[data-properties~="unread"] {
+          --read-status-display: none;
+        }
+
+        & .card-container .date {
+          color: var(--color-text-muted);
+          opacity: 1;
+        }
+
+        & .card-container .subject {
+          color: var(--color-text-secondary);
+        }
+
+        &[data-properties~="unread"] .card-container .subject {
+          color: var(--color-text-base);
+        }
+      }
+
+      /* Hover quick actions replace the date and menu button. */
+      & .card-layout:not([data-properties~="dummy"]) {
+        & .overhaul-quick-actions {
+          display: none;
+          align-items: center;
+          gap: 2px;
+          flex: 0 0 auto;
+        }
+
+        &:hover {
+          & .overhaul-quick-actions {
+            display: inline-flex;
+          }
+
+          & .card-container :is(.date, .tree-button-more) {
+            display: none;
+          }
+        }
+      }
+
+      & .overhaul-quick-actions > button {
+        min-inline-size: 22px;
+        min-block-size: 22px;
+        margin: 0;
+        padding: 3px;
+        border: none;
+        border-radius: var(--overhaul-radius-small);
+        background-color: transparent;
+        background-position: center;
+        background-repeat: no-repeat;
+        color: var(--color-text-secondary);
+        -moz-context-properties: fill, stroke;
+        fill: color-mix(in srgb, currentColor 20%, transparent);
+        stroke: currentColor;
+        opacity: 1;
+
+        &:hover {
+          background-color: color-mix(in srgb, currentColor 12%, transparent);
+          color: var(--color-text-base);
+        }
+
+        &:hover:active {
+          background-color: color-mix(in srgb, currentColor 20%, transparent);
+        }
+
+        &.tree-button-archive {
+          background-image: var(--icon-archive);
+        }
+
+        &.tree-button-unread {
+          background-image: var(--icon-unread);
+        }
+
+        &.tree-button-request-delete {
+          background-image: var(--icon-trash);
+
+          &:hover {
+            color: var(--color-text-critical);
+          }
+        }
+      }
+    }
+  }
+}

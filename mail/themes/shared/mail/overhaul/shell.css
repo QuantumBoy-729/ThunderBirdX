@@ -1,0 +1,149 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * Overhaul app shell (personal fork): spaces rail, unified toolbar and tabs.
+ *
+ * Loaded last in messenger.xhtml so it can override the upstream rules at
+ * equal specificity. Builds on the tokens in overhaul/tokens.css. Lightweight
+ * themes and high contrast mode keep the upstream styling.
+ */
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("mail.overhaul.enabled") {
+  @media not (prefers-contrast) {
+    /* Spaces rail */
+
+    :root:not([lwtheme]) {
+      --spaces-bg-color: var(--layout-background-2);
+      --spaces-bg-image: none;
+      --spaces-button-active-bg-color: var(--color-primary-soft);
+      --spaces-button-active-text-color: var(--color-primary-default);
+      --spaces-button-badge-bg-color: var(--color-red-60);
+      --spaces-button-radius: var(--overhaul-radius-medium);
+      --spaces-indicator-size: 3px;
+    }
+
+    /* Wider rail with bigger targets, normal density only. */
+    :root:not([uidensity="compact"], [uidensity="touch"]) {
+      --spaces-icon-size: 22px;
+      --spaces-padding: 9px;
+      --spaces-button-padding: 8px;
+      --spaces-gap: 12px;
+      --spaces-container-gap: 6px;
+    }
+
+    :root:not([lwtheme]) .spaces-toolbar:not([hidden]) {
+      border-inline-end-color: var(--layout-border-0);
+    }
+
+    :root:not([lwtheme]) .spaces-toolbar-container {
+      align-items: center;
+    }
+
+    :root:not([lwtheme]) .spaces-toolbar-button {
+      border-radius: var(--spaces-button-radius);
+
+      &:hover:not(.current) {
+        background-color: color-mix(in srgb, currentColor 8%, transparent);
+      }
+
+      /* Accent bar on the window edge for the current space. */
+      &.current::before {
+        content: "";
+        position: absolute;
+        inset-inline-start: calc(-1 * var(--spaces-padding));
+        inset-block: 25%;
+        inline-size: var(--spaces-indicator-size);
+        border-start-end-radius: var(--spaces-indicator-size);
+        border-end-end-radius: var(--spaces-indicator-size);
+        background-color: var(--color-primary-default);
+      }
+
+      &.current > img {
+        fill: color-mix(in srgb, currentColor 25%, transparent);
+      }
+    }
+
+    /* Unified toolbar */
+
+    :root:not([lwtheme]) unified-toolbar {
+      border-block-end-color: var(--layout-border-0);
+    }
+
+    :root:not([lwtheme]) #unifiedToolbarContent {
+      gap: 3px;
+
+      & .search-bar {
+        flex: 1 1 40%;
+        max-inline-size: 640px;
+      }
+    }
+
+    /* "New message" as the one prominent action, like a compose button. */
+    :root:not([lwtheme]) #unifiedToolbarContent .write-message > button {
+      background-color: var(--button-primary-background-color);
+      border-color: transparent;
+      border-radius: var(--overhaul-radius-small);
+      color: var(--button-primary-text-color);
+      font-weight: 600;
+      padding-inline: 12px 14px;
+
+      &:hover {
+        background-color: var(--button-primary-hover-background-color);
+        box-shadow: var(--overhaul-shadow-raised);
+      }
+
+      &:hover:active {
+        background-color: var(--button-primary-active-background-color);
+        box-shadow: none;
+      }
+    }
+
+    :root:not([lwtheme]) global-search-bar {
+      --search-bar-border-color: transparent;
+    }
+
+    /* Tabs: flat strip that blends into the toolbar, pill-shaped tabs. */
+
+    :root:not([lwtheme]) {
+      --tabs-toolbar-background-color: var(--layout-background-1);
+      --tabs-toolbar-box-shadow: none;
+    }
+
+    :root:not([lwtheme]) #tabs-toolbar {
+      background-image: none;
+      background-color: var(--tabs-toolbar-background-color);
+      border-block-end: 1px solid var(--layout-border-0);
+      padding-block: 4px;
+      padding-inline: 6px;
+    }
+
+    :root:not([lwtheme]) .tabmail-tab {
+      border-radius: var(--overhaul-radius-small);
+      margin-inline-end: 4px;
+
+      &[selected] {
+        box-shadow: var(--overhaul-shadow-raised);
+      }
+
+      & .tab-background {
+        border-radius: var(--overhaul-radius-small);
+
+        &[selected] {
+          background-color: var(--layout-background-0);
+        }
+      }
+
+      &:hover .tab-background:not([selected]) {
+        background-color: color-mix(in srgb, currentColor 6%, transparent);
+      }
+
+      /* The pill and shadow already mark the selected tab. */
+      & .tab-line {
+        display: none;
+      }
+    }
+  }
+}

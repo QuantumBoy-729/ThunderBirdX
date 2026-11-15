@@ -8,6 +8,7 @@
 /* globals commandController, DBViewWrapper, dbViewWrapperListener,
      nsMsgViewIndex_None, VirtualFolderHelper */
 /* globals gDBView: true, gFolder: true, gViewWrapper: true */
+/* globals MessageArchiver */
 
 // mailContext.js
 /* globals mailContextMenu */
@@ -1746,6 +1747,14 @@ var folderPane = {
 
     this._isCompact = XULStoreUtils.isItemCompact("messenger", "folderTree");
     let activeModes = XULStoreUtils.getValue("messenger", "folderTree", "mode");
+    // Overhaul (personal fork): new profiles start with unified folders above
+    // the per-account folders.
+    if (
+      !activeModes &&
+      Services.prefs.getBoolPref("mail.overhaul.enabled", false)
+    ) {
+      activeModes = "smart,all";
+    }
     activeModes = activeModes.split(",");
     this.activeModes = activeModes;
 
@@ -4573,6 +4582,20 @@ var threadPane = {
       gDBView.applyCommandToIndices(Ci.nsMsgViewCommandType.deleteMsg, [
         event.detail.index,
       ]);
+    });
+    // Overhaul (personal fork): archive from the card quick actions.
+    this.treeTable.addEventListener("request-archive", event => {
+      const messages = gDBView.getCollapsedMsgHdrsAt(event.detail.index);
+      if (
+        !messages.length ||
+        !MessageArchiver.canArchive(messages, gViewWrapper.isSingleFolder)
+      ) {
+        return;
+      }
+      const archiver = new MessageArchiver();
+      // Allow the move to be undone.
+      archiver.interactive = true;
+      archiver.archiveMessages(messages);
     });
 
     this.updateClassList();

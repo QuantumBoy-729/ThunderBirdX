@@ -521,6 +521,11 @@
   skin/classic/messenger/pane-splitter.css                    (../shared/mail/pane-splitter.css)
   skin/classic/messenger/widgets.css                          (../shared/mail/widgets.css)
 
+# Overhaul (personal fork)
+  skin/classic/messenger/overhaul/tokens.css                  (../shared/mail/overhaul/tokens.css)
+  skin/classic/messenger/overhaul/shell.css                   (../shared/mail/overhaul/shell.css)
+  skin/classic/messenger/overhaul/cards.css                   (../shared/mail/overhaul/cards.css)
+
 # The "new" folder in the path of these icons is actually old now, too.
   skin/classic/messenger/icons/new/compact/account-settings.svg (../shared/mail/icons/new/compact/account-settings.svg)
   skin/classic/messenger/icons/new/compact/add.svg            (../shared/mail/icons/new/compact/add.svg)

@@ -33,10 +33,13 @@
   <link rel="stylesheet" href="chrome://messenger/skin/shared/tree-listbox.css" />
   <link rel="stylesheet" href="chrome://messenger/skin/searchBox.css" />
   <link rel="stylesheet" href="chrome://messenger/skin/about3Pane.css" />
+  <!-- Overhaul (personal fork): keep last so it overrides the styles above. -->
+  <link rel="stylesheet" href="chrome://messenger/skin/overhaul/cards.css" />
 
   <link rel="localization" href="calendar/calendar.ftl" />
   <link rel="localization" href="messenger/about3Pane.ftl" />
   <link rel="localization" href="messenger/treeView.ftl" />
+  <link rel="localization" href="messenger/overhaul.ftl" />
   <link rel="localization" href="messenger/messenger.ftl" />
   <link rel="localization" href="toolkit/global/textActions.ftl" />
   <link rel="localization" href="toolkit/main-window/findbar.ftl" />
@@ -311,6 +314,24 @@
               <img class="state forwarded" src="" data-l10n-id="threadpane-message-forwarded" />
               <img class="state redirected" src="" data-l10n-id="threadpane-message-redirected" />
               <span class="date"></span>
+              <!-- Overhaul (personal fork): hover quick actions. -->
+              <span class="overhaul-quick-actions">
+                <button type="button"
+                        class="tree-button-archive"
+                        aria-hidden="true"
+                        data-l10n-id="overhaul-card-archive"
+                        tabindex="-1"></button>
+                <button type="button"
+                        class="tree-button-unread"
+                        aria-hidden="true"
+                        data-l10n-id="overhaul-card-toggle-read"
+                        tabindex="-1"></button>
+                <button type="button"
+                        class="tree-button-request-delete"
+                        aria-hidden="true"
+                        data-l10n-id="overhaul-card-delete"
+                        tabindex="-1"></button>
+              </span>
               <button type="button"
                       class="button icon-button icon-only tree-button-more"
                       aria-hidden="hidden"

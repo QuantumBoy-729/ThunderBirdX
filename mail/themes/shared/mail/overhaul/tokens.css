@@ -1,0 +1,128 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/*
+ * Overhaul design tokens (personal fork).
+ *
+ * Overrides the upstream color, layout and widget tokens to give the UI a
+ * lighter, flatter look: cool neutral surfaces, softer borders, rounder
+ * corners and a single fixed accent color.
+ *
+ * This file is imported at the top of colors.css and variables.css so it is
+ * present in every document and shadow root that uses the design system. The
+ * selectors below have doubled specificity so they win over the upstream
+ * `:root` / `:host` declarations regardless of load order, while still losing
+ * to more specific upstream rules such as `[uidensity]` and `[lwtheme]`.
+ *
+ * Toggle with the `mail.overhaul.enabled` pref. High contrast mode is left
+ * untouched.
+ */
+
+/* stylelint-disable-next-line media-query-no-invalid */
+@media -moz-pref("mail.overhaul.enabled") {
+  @media not (prefers-contrast) {
+    :root:not(:host),
+    :host(:not(:root)) {
+      /* Surfaces */
+      --color-surface-base-light: #ffffff;
+      --color-surface-raised-light: #ffffff;
+      --color-surface-subtle-light: #f1f4f9;
+      --color-surface-lower-light: #f6f8fb;
+      --color-surface-deep-light: #e6eaf1;
+      --color-surface-border-light: #e2e6ed;
+      --color-surface-border-intense-light: #b8c0cc;
+
+      --color-surface-base-dark: #15171c;
+      --color-surface-raised-dark: #1f2229;
+      --color-surface-subtle-dark: #1a1d23;
+      --color-surface-lower-dark: #111317;
+      --color-surface-deep-dark: #2a2e37;
+      --color-surface-border-dark: #2b3039;
+      --color-surface-border-intense-dark: #454c58;
+
+      /* Accent */
+      --color-primary-soft-light: #eef4ff;
+      --color-primary-default-light: #2f6bed;
+      --color-primary-hover-light: #2558cc;
+      --color-primary-pressed-light: #1e47a6;
+
+      --color-primary-soft-dark: #1c2740;
+      --color-primary-default-dark: #6ea2ff;
+      --color-primary-hover-dark: #8ab4ff;
+      --color-primary-pressed-dark: #a6c6ff;
+
+      /* Text */
+      --color-text-base-light: #1b2230;
+      --color-text-secondary-light: #4a5568;
+      --color-text-muted-light: #6b7585;
+      --color-text-brand-light: #2558cc;
+      --color-text-highlight-light: #2f6bed;
+
+      --color-text-base-dark: #eceff4;
+      --color-text-secondary-dark: #c3c9d4;
+      --color-text-muted-dark: #8d96a5;
+      --color-text-brand-dark: #8ab4ff;
+      --color-text-highlight-dark: #6ea2ff;
+
+      /* Layout (see layout.css for the meaning of each level) */
+      --layout-background-0: light-dark(#ffffff, #15171c);
+      --layout-background-1: light-dark(#f6f8fb, #1a1d23);
+      --layout-background-2: light-dark(#eef1f6, #22262d);
+      --layout-background-3: light-dark(#e3e7ee, #2b3039);
+      --layout-background-4: light-dark(#d4dae3, #383e49);
+
+      --layout-color-0: light-dark(#0f141e, #ffffff);
+      --layout-color-1: light-dark(#1b2230, #eceff4);
+      --layout-color-2: light-dark(#4a5568, #c3c9d4);
+      --layout-color-3: light-dark(#7a8494, #8d96a5);
+
+      --layout-border-0: light-dark(#e6e9ef, #262a32);
+      --layout-border-1: light-dark(#cfd5de, #3a404b);
+      --layout-border-2: light-dark(#8a93a3, #5a6270);
+
+      /* Shape and elevation, also used by later overhaul stylesheets */
+      --overhaul-radius-small: 6px;
+      --overhaul-radius-medium: 10px;
+      --overhaul-radius-large: 14px;
+      --overhaul-shadow-raised: 0 1px 2px light-dark(rgb(16 24 40 / 0.06), rgb(0 0 0 / 0.4));
+      --overhaul-shadow-floating: 0 8px 24px light-dark(rgb(16 24 40 / 0.12), rgb(0 0 0 / 0.5));
+
+      /* Widgets */
+      --button-border-radius: var(--overhaul-radius-small);
+      --button-border-color: var(--layout-border-1);
+      --button-primary-shadow: none;
+      --button-primary-hover-shadow: var(--overhaul-shadow-raised);
+      --toolbar-button-hover-background-color: color-mix(in srgb, currentColor 8%, transparent);
+      --toolbar-button-hover-border-color: transparent;
+      --toolbar-button-active-background-color: color-mix(in srgb, currentColor 14%, transparent);
+      --toolbar-button-active-border-color: transparent;
+      --search-bar-border-color: transparent;
+      --search-bar-background: var(--layout-background-2);
+      --search-bar-focus-background: var(--layout-background-0);
+      --chrome-content-separator-color: var(--layout-border-0);
+      --transition-duration: 150ms;
+
+      & :is(menupopup, panel):not(.autoscroller) {
+        --panel-background-color: var(--color-surface-raised);
+        --panel-border-color: var(--color-surface-border);
+        --panel-border-radius: var(--overhaul-radius-medium);
+      }
+    }
+
+    /*
+     * Fixed accent, applied only while the accent pref is at its default
+     * ("accent-color", which follows the OS). Choosing any other accent in
+     * Settings still takes effect.
+     */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.appearance.accentColor", "accent-color") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --selected-item-color: var(--color-primary-default);
+        --selected-item-text-color: light-dark(#ffffff, #0d1320);
+        accent-color: var(--selected-item-color);
+      }
+    }
+  }
+}
