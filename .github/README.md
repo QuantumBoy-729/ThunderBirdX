@@ -55,8 +55,13 @@ upstream fixes.
 | Flat message cards with an unread marker | ✅ | |
 | Calendar with day, week and month views | ✅ | From Thunderbird |
 | Light and dark themes | ✅ | Plus Thunderbird's theme add-ons |
-| Custom backgrounds | 📋 | |
-| Notification sound choices | 📋 | |
+| Theme presets | ✅ | Default (blue), Ocean, Forest, Sunset, Graphite, each in light and dark |
+| Shape and layout options | ✅ | Sharp, soft or round corners; wide or slim app rail; avatars and unread bar can be turned off |
+| Custom backgrounds | ✅ | Gradient presets or your own image behind the app chrome, with a readability veil and optional blur |
+| Notification sound choices | ✅ | Chime, Pop, Bell or Soft for new mail, with a preview button |
+
+All of these are in **Settings → Appearance → ThunderBirdX** and apply
+immediately, without a restart.
 
 ### Integrations and AI
 
@@ -90,16 +95,17 @@ features held back. It is open source under the
    address book, calendar and settings.
 8. **Integrations and AI** 📋. Web apps in the app rail, optional AI writing
    assistant.
-9. **Polish** 📋. Motion, accessibility review, custom backgrounds and sounds.
+9. **Polish** 🚧. Theme presets, shape and layout options, custom backgrounds
+   and sounds are done; motion and an accessibility review are next.
 
 ## Design principles
 
 - **Stay close to upstream.** New styles live in separate files under
   `mail/themes/shared/mail/overhaul/`, and changes to upstream files are kept
   small, so upstream updates merge cleanly.
-- **Everything can be switched off.** The new interface is controlled by the
-  `mail.overhaul.enabled` preference (Settings → General → Config Editor). Set it
-  to `false` to get the standard Thunderbird look back.
+- **Everything can be switched off.** Untick **Use the ThunderBirdX look** in
+  Settings → Appearance (the `mail.overhaul.enabled` preference) to get the
+  standard Thunderbird look back.
 - **Accessibility first.** High contrast mode is never restyled, and new
   controls get keyboard and screen reader support.
 - **Privacy by default.** No tracking of you or of the people you email (no
