@@ -108,8 +108,21 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/out"
           shopt -s nullglob
           for f in thunderbird-*.zip; do
-            case "$f" in *xpt_artifacts*) continue ;; esac
+            case "$f" in *xpt_artifacts* | *update_framework_artifacts*) continue ;; esac
             cp "$f" "$GITHUB_WORKSPACE/out/${name}.zip"
+          done
+          # On macOS, artifact builds package the app as a .tar. Re-sign it
+          # ad hoc (the front end changed, which breaks the original
+          # signature) and wrap it in a drag-to-Applications disk image.
+          for f in thunderbird-*.mac.tar; do
+            mkdir -p mac stage
+            tar -xf "$f" -C mac
+            app=$(find mac -maxdepth 2 -name "*.app" -type d | head -n 1)
+            [ -n "$app" ] || { echo "No .app in $f"; exit 1; }
+            mv "$app" stage/
+            codesign --force --deep --sign - "stage/$(basename "$app")"
+            ln -s /Applications stage/Applications
+            hdiutil create -volname ThunderBirdX -srcfolder stage -ov -format UDZO "$GITHUB_WORKSPACE/out/${name}.dmg"
           done
           for f in thunderbird-*.installer.exe; do cp "$f" "$GITHUB_WORKSPACE/out/${name}-setup.exe"; done
           for f in thunderbird-*.tar.xz; do cp "$f" "$GITHUB_WORKSPACE/out/${name}.tar.xz"; done

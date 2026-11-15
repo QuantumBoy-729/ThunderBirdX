@@ -16,8 +16,9 @@ See the [feature list](https://github.com/QuantumBoy-729/ThunderBirdX#feature-st
 ## Before you install
 
 - **Builds are not code signed.** Windows SmartScreen may warn you: choose
-  *More info → Run anyway*. On macOS, right-click the app and choose *Open*
-  the first time.
+  *More info → Run anyway*. On macOS, drag ThunderBirdX to Applications, then
+  right-click it and choose *Open* the first time. If macOS says the app is
+  damaged, run `xattr -cr /Applications/ThunderBirdX.app` in Terminal.
 - **No automatic updates.** Download new versions from this Releases page.
 - **Profiles:** ThunderBirdX uses the same profile folder as Thunderbird but
   creates its own default profile per installation. Back up your Thunderbird
