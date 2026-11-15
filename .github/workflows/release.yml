@@ -1,0 +1,161 @@
+# ThunderBirdX release builds.
+#
+# Builds Windows, Linux and macOS packages as artifact builds (Mozilla's
+# prebuilt Thunderbird Daily binaries for the Gecko revision pinned in
+# .github/release/gecko-rev, plus this repository's front end with ThunderBirdX
+# branding) and attaches them to a draft GitHub release for review.
+#
+# Start a release by pushing a tag such as v0.1.0, or run this workflow by hand
+# from the Actions tab and enter a version.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, without the leading v (for example 0.1.0)"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ inputs.version || github.ref_name }}
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x64
+            os: ubuntu-24.04
+          - platform: windows-x64
+            os: windows-2025
+          - platform: macos-arm64
+            os: macos-15
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+
+    steps:
+      - name: Free disk space (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      # mach finds prebuilt binaries by walking recent comm commits, so it needs
+      # a few hundred commits of history.
+      - name: Check out ThunderBirdX
+        uses: actions/checkout@v4
+        with:
+          path: firefox/comm
+          fetch-depth: 600
+
+      # Firefox goes around it; Firefox does not track anything under comm/.
+      - name: Check out Firefox at the pinned Gecko revision
+        shell: bash
+        working-directory: firefox
+        run: |
+          gecko_rev=$(cat comm/.github/release/gecko-rev)
+          echo "Gecko revision: $gecko_rev"
+          git init -q
+          git remote add origin https://github.com/mozilla-firefox/firefox.git
+          git fetch -q --depth 1 --no-tags origin "$gecko_rev"
+          git checkout -q FETCH_HEAD
+
+      - name: Install MozillaBuild (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-Latest.exe -OutFile "$env:RUNNER_TEMP\MozillaBuildSetup.exe"
+          Start-Process "$env:RUNNER_TEMP\MozillaBuildSetup.exe" -ArgumentList '/S' -Wait
+          if (-not (Test-Path C:\mozilla-build\msys2\usr\bin\bash.exe)) { throw "MozillaBuild did not install" }
+
+      - name: Build and package (Linux, macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        working-directory: firefox
+        env:
+          MOZBUILD_STATE_PATH: ${{ runner.temp }}/mozbuild
+        run: bash comm/.github/release/build.sh
+
+      - name: Build and package (Windows)
+        if: runner.os == 'Windows'
+        shell: C:\mozilla-build\msys2\usr\bin\bash.exe -l -eo pipefail {0}
+        working-directory: firefox
+        env:
+          CHERE_INVOKING: "1"
+          MOZILLABUILD: 'C:\mozilla-build\'
+          MSYS2_PATH_TYPE: inherit
+          MOZBUILD_STATE_PATH: ${{ runner.temp }}\mozbuild
+        run: bash comm/.github/release/build.sh
+
+      - name: Collect packages
+        shell: bash
+        working-directory: firefox/obj-release/dist
+        run: |
+          version="${VERSION#v}"
+          name="ThunderBirdX-${version}-${{ matrix.platform }}"
+          mkdir -p "$GITHUB_WORKSPACE/out"
+          shopt -s nullglob
+          for f in thunderbird-*.zip; do
+            case "$f" in *xpt_artifacts*) continue ;; esac
+            cp "$f" "$GITHUB_WORKSPACE/out/${name}.zip"
+          done
+          for f in thunderbird-*.installer.exe; do cp "$f" "$GITHUB_WORKSPACE/out/${name}-setup.exe"; done
+          for f in thunderbird-*.tar.xz; do cp "$f" "$GITHUB_WORKSPACE/out/${name}.tar.xz"; done
+          for f in thunderbird-*.tar.bz2; do cp "$f" "$GITHUB_WORKSPACE/out/${name}.tar.bz2"; done
+          for f in thunderbird-*.dmg; do cp "$f" "$GITHUB_WORKSPACE/out/${name}.dmg"; done
+          ls -la "$GITHUB_WORKSPACE/out"
+          [ -n "$(ls -A "$GITHUB_WORKSPACE/out")" ] || { echo "No packages found"; ls -la; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.platform }}
+          path: out/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Draft GitHub release
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packages-*
+          path: out
+          merge-multiple: true
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${VERSION#v}"
+          tag="v${version}"
+          base=$(cat mail/config/version.txt)
+          gecko=$(cat .github/release/gecko-rev)
+          (cd out && sha256sum * > SHA256SUMS.txt)
+          sed -e "s/@VERSION@/${version}/g" \
+              -e "s/@BASE@/${base}/g" \
+              -e "s/@GECKO@/${gecko}/g" \
+              -e "s/@COMMIT@/${GITHUB_SHA}/g" \
+              .github/release/notes.md > notes.md
+          gh release create "$tag" out/* \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "ThunderBirdX ${version}" \
+            --notes-file notes.md

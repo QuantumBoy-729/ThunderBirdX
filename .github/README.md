@@ -13,6 +13,13 @@ upstream fixes.
 > of the new productivity features are still planned. The table below shows
 > exactly what exists today.
 
+## Download
+
+Builds for Windows, macOS (Apple silicon) and Linux are on the
+[Releases page](https://github.com/QuantumBoy-729/ThunderBirdX/releases).
+They are development builds based on Thunderbird Daily, are not code signed,
+and do not update automatically.
+
 ## Feature status
 
 ✅ Available · 🚧 In progress · 📋 Planned
@@ -149,6 +156,26 @@ Then bootstrap, build and run. On Windows, run these from the
 After the first build, `./mach build faster` is enough for front-end changes.
 See the [Building Thunderbird guide](https://developer.thunderbird.net/thunderbird-development/building-thunderbird)
 for more detail.
+
+## Releasing
+
+Releases are built by GitHub Actions ([release.yml](workflows/release.yml)):
+
+1. Push a tag such as `v0.1.0`, or run the **Release** workflow from the
+   Actions tab and enter a version.
+2. The workflow makes artifact builds for Windows, Linux and macOS with the
+   ThunderBirdX branding in `mail/branding/thunderbirdx/` and the settings in
+   [release/mozconfig](release/mozconfig).
+3. It attaches the packages and checksums to a **draft** release. Review the
+   draft, then publish it.
+
+Artifact builds reuse Mozilla's prebuilt Thunderbird Daily binaries, so the
+Firefox source must match the Thunderbird code: [release/gecko-rev](release/gecko-rev)
+pins the Firefox revision used for the build.
+
+Every Monday, the **Upstream sync** workflow ([upstream-sync.yml](workflows/upstream-sync.yml))
+opens a pull request that merges upstream Thunderbird and updates that pin. If
+the merge has conflicts, the run fails and lists the files to merge by hand.
 
 ## Relationship to Thunderbird
 

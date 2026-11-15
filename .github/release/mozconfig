@@ -1,0 +1,15 @@
+# ThunderBirdX release build (used by .github/workflows/release.yml).
+#
+# Artifact build: Mozilla's prebuilt Thunderbird Daily binaries for the
+# Gecko revision in .github/release/gecko-rev, plus this repository's
+# front end with ThunderBirdX branding.
+ac_add_options --enable-project=comm/mail
+ac_add_options --enable-artifact-builds
+ac_add_options --with-branding=comm/mail/branding/thunderbirdx
+
+# Releases are published on GitHub: no Mozilla update server, no crash
+# reports sent to Mozilla.
+ac_add_options --disable-updater
+ac_add_options --disable-crashreporter
+
+mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-release

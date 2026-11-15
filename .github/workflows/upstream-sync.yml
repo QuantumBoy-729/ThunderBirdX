@@ -1,0 +1,86 @@
+# Weekly merge of upstream Thunderbird into ThunderBirdX.
+#
+# Opens a pull request that merges thunderbird/thunderbird-desktop main into
+# overhaul and moves .github/release/gecko-rev to the Firefox revision upstream
+# was built against at that point. If the merge has conflicts, the run fails
+# with the list of files (and opens an issue if issues are turned on), so the
+# merge can be done by hand.
+
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: overhaul
+          fetch-depth: 0
+
+      - name: Merge upstream main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/thunderbird/thunderbird-desktop.git
+          git fetch -q upstream main
+
+          count=$(git rev-list --count HEAD..upstream/main)
+          if [ "$count" = 0 ]; then
+            echo "Already up to date with upstream."
+            exit 0
+          fi
+          upstream_sha=$(git rev-parse upstream/main)
+          branch="sync/upstream-$(date -u +%Y-%m-%d)"
+
+          open_syncs=$(gh pr list --state open --json headRefName --jq '[.[] | select(.headRefName | startswith("sync/upstream-"))] | length')
+          if [ "$open_syncs" != 0 ]; then
+            echo "An upstream sync pull request is already open; not opening another."
+            exit 0
+          fi
+
+          git switch -c "$branch"
+          if ! git merge --no-edit -m "Merge upstream Thunderbird main into overhaul" upstream/main; then
+            conflicts=$(git diff --name-only --diff-filter=U | sed 's/^/- `/; s/$/`/')
+            git merge --abort
+            body=$(printf 'Merging %s new upstream commits (up to %s) into overhaul has conflicts in:\n\n%s\n\nMerge by hand:\n\n```bash\ngit fetch https://github.com/thunderbird/thunderbird-desktop.git main\ngit merge FETCH_HEAD\n```\n\nThen set `.github/release/gecko-rev` to the Firefox `main` commit from just before the upstream head commit.' "$count" "$upstream_sha" "$conflicts")
+            echo "$body" >> "$GITHUB_STEP_SUMMARY"
+            # Issues may be turned off for the repository; the failed run is
+            # reported either way.
+            gh issue create \
+              --title "Upstream sync needs a manual merge ($(date -u +%Y-%m-%d))" \
+              --body "$body" || true
+            exit 1
+          fi
+
+          # Pair the Thunderbird code with the Firefox code it was built with:
+          # the last Firefox main commit before upstream's head commit landed.
+          upstream_date=$(git show -s --format=%cI upstream/main)
+          gecko_rev=$(gh api "repos/mozilla-firefox/firefox/commits?sha=main&until=${upstream_date}&per_page=1" --jq '.[0].sha')
+          if [ -n "$gecko_rev" ]; then
+            echo "$gecko_rev" > .github/release/gecko-rev
+            git add .github/release/gecko-rev
+            git commit -q -m "No Bug - Pin release Gecko revision to ${gecko_rev:0:12}. DONTBUILD"
+          fi
+
+          git push -q origin "$branch"
+          gh pr create \
+            --base overhaul \
+            --head "$branch" \
+            --title "Merge upstream Thunderbird ($(date -u +%Y-%m-%d))" \
+            --body "$(printf 'Merges %s new upstream Thunderbird commits (up to thunderbird/thunderbird-desktop@%s) into overhaul.\n\nRelease builds will use Firefox %s.\n\nCheck the overhaul styles still look right before merging, especially if upstream changed `mail/themes/`.' "$count" "$upstream_sha" "${gecko_rev:-unchanged}")"

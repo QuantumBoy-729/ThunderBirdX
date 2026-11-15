@@ -66,6 +66,7 @@ export default [
   "mail/branding/nightly/pref/thunderbird-branding.js",
   "mail/branding/tb_beta/pref/thunderbird-branding.js",
   "mail/branding/thunderbird/pref/thunderbird-branding.js",
+  "mail/branding/thunderbirdx/pref/thunderbird-branding.js",
   // This file is split into two in order to keep it as a valid json file
   // for documentation purposes (policies.json) but to be accessed by the
   // code as a JS module (schema.sys.mjs)
