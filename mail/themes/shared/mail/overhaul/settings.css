@@ -1,0 +1,28 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* Overhaul (personal fork): layout of the ThunderBirdX settings section. */
+
+.overhaul-options {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
+  gap: 6px 12px;
+  margin-block-start: 6px;
+
+  & > label {
+    margin-inline: 0;
+  }
+
+  & > :is(menulist, hbox) {
+    justify-self: start;
+  }
+}
+
+.overhaul-checkboxes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}

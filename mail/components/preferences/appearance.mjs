@@ -4,6 +4,9 @@
 
 /* global Preferences, MozElements */
 
+// Overhaul (personal fork): ThunderBirdX appearance options.
+import { overhaulAppearance } from "chrome://messenger/content/preferences/overhaulAppearance.mjs";
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   MailServices: "resource:///modules/MailServices.sys.mjs",
@@ -32,6 +35,7 @@ const prefersContrast = window.matchMedia("(prefers-contrast)");
 
 export const appearancePane = {
   init() {
+    overhaulAppearance.init();
     this.addEventListeners();
     this.toggleExtraViewOptions();
     Preferences.get("mail.threadpane.listview").on(

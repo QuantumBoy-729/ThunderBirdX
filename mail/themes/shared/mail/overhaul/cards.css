@@ -215,5 +215,34 @@
         }
       }
     }
+
+    /* Layout options from Settings → Appearance → ThunderBirdX. */
+
+    /* Avatars off: give the column back to the read status icon. */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("mail.overhaul.avatars") {
+      :root:not([lwtheme]) #threadTree[rows="thread-card"] .card-layout:not([data-properties~="dummy"]) {
+        & .read-status-column {
+          inline-size: var(--read-status-size);
+          margin-inline-end: 0;
+        }
+
+        & .overhaul-avatar {
+          display: none;
+        }
+
+        & .read-status {
+          display: var(--read-status-display, none);
+        }
+      }
+    }
+
+    /* Unread bar off: unread messages are shown in bold only. */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("mail.overhaul.unread_bar") {
+      :root:not([lwtheme]) #threadTree[rows="thread-card"] .card-layout[data-properties~="unread"] .card-container::before {
+        display: none;
+      }
+    }
   }
 }

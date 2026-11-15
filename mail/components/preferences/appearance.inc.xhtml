@@ -9,6 +9,98 @@
     <html:h1 data-l10n-id="appearance-category-header"/>
   </hbox>
 
+  <!-- Overhaul (personal fork): ThunderBirdX appearance options. -->
+  <html:fieldset id="overhaulGroup" data-category="paneAppearance">
+    <html:legend data-l10n-id="overhaul-legend"></html:legend>
+    <checkbox id="overhaulEnabled"
+              data-l10n-id="overhaul-enabled"
+              preference="mail.overhaul.enabled"/>
+    <html:div id="overhaulOptions" class="indent overhaul-options">
+      <label data-l10n-id="overhaul-theme" control="overhaulTheme"/>
+      <menulist id="overhaulTheme" preference="mail.overhaul.theme">
+        <menupopup>
+          <menuitem value="default" data-l10n-id="overhaul-theme-default"/>
+          <menuitem value="ocean" data-l10n-id="overhaul-theme-ocean"/>
+          <menuitem value="forest" data-l10n-id="overhaul-theme-forest"/>
+          <menuitem value="sunset" data-l10n-id="overhaul-theme-sunset"/>
+          <menuitem value="graphite" data-l10n-id="overhaul-theme-graphite"/>
+        </menupopup>
+      </menulist>
+
+      <label data-l10n-id="overhaul-corners" control="overhaulCorners"/>
+      <menulist id="overhaulCorners" preference="mail.overhaul.corners">
+        <menupopup>
+          <menuitem value="sharp" data-l10n-id="overhaul-corners-sharp"/>
+          <menuitem value="soft" data-l10n-id="overhaul-corners-soft"/>
+          <menuitem value="round" data-l10n-id="overhaul-corners-round"/>
+        </menupopup>
+      </menulist>
+
+      <label data-l10n-id="overhaul-rail" control="overhaulRail"/>
+      <menulist id="overhaulRail" preference="mail.overhaul.rail">
+        <menupopup>
+          <menuitem value="wide" data-l10n-id="overhaul-rail-wide"/>
+          <menuitem value="slim" data-l10n-id="overhaul-rail-slim"/>
+        </menupopup>
+      </menulist>
+
+      <label data-l10n-id="overhaul-background" control="overhaulBackground"/>
+      <hbox align="center">
+        <menulist id="overhaulBackground" preference="mail.overhaul.background">
+          <menupopup>
+            <menuitem value="none" data-l10n-id="overhaul-background-none"/>
+            <menuitem value="aurora" data-l10n-id="overhaul-background-aurora"/>
+            <menuitem value="dusk" data-l10n-id="overhaul-background-dusk"/>
+            <menuitem value="meadow" data-l10n-id="overhaul-background-meadow"/>
+            <menuitem value="midnight" data-l10n-id="overhaul-background-midnight"/>
+            <menuitem value="custom" data-l10n-id="overhaul-background-custom"/>
+          </menupopup>
+        </menulist>
+        <button is="highlightable-button" id="overhaulBackgroundChoose"
+                data-l10n-id="overhaul-background-choose"/>
+      </hbox>
+
+      <label data-l10n-id="overhaul-background-dim" control="overhaulBackgroundDim"/>
+      <hbox align="center">
+        <menulist id="overhaulBackgroundDim" preference="mail.overhaul.background.dim">
+          <menupopup>
+            <menuitem value="none" data-l10n-id="overhaul-background-dim-none"/>
+            <menuitem value="light" data-l10n-id="overhaul-background-dim-light"/>
+            <menuitem value="medium" data-l10n-id="overhaul-background-dim-medium"/>
+            <menuitem value="strong" data-l10n-id="overhaul-background-dim-strong"/>
+          </menupopup>
+        </menulist>
+        <checkbox id="overhaulBackgroundBlur"
+                  data-l10n-id="overhaul-background-blur"
+                  preference="mail.overhaul.background.blur"/>
+      </hbox>
+
+      <label data-l10n-id="overhaul-sound" control="overhaulSound"/>
+      <hbox align="center">
+        <menulist id="overhaulSound" preference="mail.overhaul.sound">
+          <menupopup>
+            <menuitem value="" data-l10n-id="overhaul-sound-general"/>
+            <menuitem value="chime" data-l10n-id="overhaul-sound-chime"/>
+            <menuitem value="pop" data-l10n-id="overhaul-sound-pop"/>
+            <menuitem value="bell" data-l10n-id="overhaul-sound-bell"/>
+            <menuitem value="soft" data-l10n-id="overhaul-sound-soft"/>
+          </menupopup>
+        </menulist>
+        <button is="highlightable-button" id="overhaulSoundPreview"
+                data-l10n-id="overhaul-sound-preview"/>
+      </hbox>
+
+      <html:div class="overhaul-checkboxes">
+        <checkbox id="overhaulAvatars"
+                  data-l10n-id="overhaul-avatars"
+                  preference="mail.overhaul.avatars"/>
+        <checkbox id="overhaulUnreadBar"
+                  data-l10n-id="overhaul-unread-bar"
+                  preference="mail.overhaul.unread_bar"/>
+      </html:div>
+    </html:div>
+  </html:fieldset>
+
   <html:fieldset id="colorGroup" data-category="paneAppearance">
     <html:legend data-l10n-id="accent-color-legend"></html:legend>
     <hbox align="center" pack="start">

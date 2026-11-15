@@ -18,6 +18,7 @@ messenger.jar:
     content/messenger/aboutExtraStylesheet.js       (content/aboutExtraStylesheet.js)
     content/messenger/aboutMessage.js               (content/aboutMessage.js)
     content/messenger/overhaulQuickReply.js         (content/overhaulQuickReply.js)
+    content/messenger/overhaulAppearance.js         (content/overhaulAppearance.js)
 *   content/messenger/aboutMessage.xhtml            (content/aboutMessage.xhtml)
     content/messenger/browserRequest.js             (content/browserRequest.js)
 *   content/messenger/browserRequest.xhtml          (content/browserRequest.xhtml)

@@ -16,6 +16,7 @@ messenger.jar:
     content/messenger/preferences/sync.js
 #endif
     content/messenger/preferences/appearance.mjs
+    content/messenger/preferences/overhaulAppearance.mjs
     content/messenger/preferences/qrExport.mjs
     content/messenger/preferences/messagestyle.js
     content/messenger/preferences/messengerLanguages.js

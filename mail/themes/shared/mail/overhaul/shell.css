@@ -25,13 +25,28 @@
       --spaces-indicator-size: 3px;
     }
 
-    /* Wider rail with bigger targets, normal density only. */
-    :root:not([uidensity="compact"], [uidensity="touch"]) {
-      --spaces-icon-size: 22px;
-      --spaces-padding: 9px;
-      --spaces-button-padding: 8px;
-      --spaces-gap: 12px;
-      --spaces-container-gap: 6px;
+    /* Wide rail with bigger targets (default), normal density only. */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("mail.overhaul.rail", "slim") {
+      :root:not([uidensity="compact"], [uidensity="touch"]) {
+        --spaces-icon-size: 22px;
+        --spaces-padding: 9px;
+        --spaces-button-padding: 8px;
+        --spaces-gap: 12px;
+        --spaces-container-gap: 6px;
+      }
+    }
+
+    /* Slim rail option, any density. */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.rail", "slim") {
+      :root:root {
+        --spaces-icon-size: 18px;
+        --spaces-padding: 6px;
+        --spaces-button-padding: 5px;
+        --spaces-gap: 9px;
+        --spaces-container-gap: 4px;
+      }
     }
 
     :root:not([lwtheme]) .spaces-toolbar:not([hidden]) {
@@ -143,6 +158,106 @@
       /* The pill and shadow already mark the selected tab. */
       & .tab-line {
         display: none;
+      }
+    }
+
+    /*
+     * Background behind the app chrome (rail, toolbar and tab strip).
+     *
+     * Prefs: mail.overhaul.background (none | aurora | dusk | meadow |
+     * midnight | custom), mail.overhaul.background.dim (none | light |
+     * medium | strong), mail.overhaul.background.blur (bool). For "custom",
+     * overhaulAppearance.js sets --overhaul-bg-custom from the chosen file.
+     */
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media not -moz-pref("mail.overhaul.background", "none") {
+      :root:not([lwtheme]) {
+        --overhaul-bg-image: none;
+        --overhaul-bg-dim: 55%;
+        --overhaul-bg-filter: none;
+        --spaces-bg-color: transparent;
+        --tabs-toolbar-background-color: transparent;
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background", "aurora") {
+          --overhaul-bg-image: linear-gradient(135deg, #6ee7b7 0%, #3b82f6 50%, #8b5cf6 100%);
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background", "dusk") {
+          --overhaul-bg-image: linear-gradient(160deg, #fb923c 0%, #db2777 55%, #4c1d95 100%);
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background", "meadow") {
+          --overhaul-bg-image: linear-gradient(135deg, #bef264 0%, #14b8a6 60%, #0f766e 100%);
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background", "midnight") {
+          --overhaul-bg-image: radial-gradient(circle at 20% 10%, #3b4fd8 0%, #1e1b4b 45%, #0b1020 100%);
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background", "custom") {
+          --overhaul-bg-image: var(--overhaul-bg-custom, none);
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background.dim", "none") {
+          --overhaul-bg-dim: 0%;
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background.dim", "light") {
+          --overhaul-bg-dim: 35%;
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background.dim", "strong") {
+          --overhaul-bg-dim: 75%;
+        }
+
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media -moz-pref("mail.overhaul.background.blur") {
+          --overhaul-bg-filter: blur(16px) saturate(1.1);
+        }
+      }
+
+      /* The image, oversized so blurred edges stay off screen. */
+      :root:not([lwtheme]) body::before {
+        content: "";
+        position: fixed;
+        inset: -32px;
+        z-index: -1;
+        pointer-events: none;
+        background-image: var(--overhaul-bg-image);
+        background-position: center;
+        background-size: cover;
+        filter: var(--overhaul-bg-filter);
+      }
+
+      /* A veil in the surface color keeps text readable. */
+      :root:not([lwtheme]) body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-color: color-mix(in srgb, var(--layout-background-0) var(--overhaul-bg-dim), transparent);
+      }
+
+      :root:not([lwtheme]) #tabs-toolbar {
+        border-block-end-color: transparent;
+      }
+
+      :root:not([lwtheme]) .spaces-toolbar:not([hidden]) {
+        border-inline-end-color: transparent;
+      }
+
+      :root:not([lwtheme]) .spaces-toolbar-button:not(.current, :hover) {
+        background-color: color-mix(in srgb, var(--layout-background-0) 35%, transparent);
       }
     }
   }

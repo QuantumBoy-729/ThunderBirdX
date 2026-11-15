@@ -527,6 +527,11 @@
   skin/classic/messenger/overhaul/cards.css                   (../shared/mail/overhaul/cards.css)
   skin/classic/messenger/overhaul/message.css                 (../shared/mail/overhaul/message.css)
   skin/classic/messenger/overhaul/conversation.css            (../shared/mail/overhaul/conversation.css)
+  skin/classic/messenger/overhaul/settings.css                (../shared/mail/overhaul/settings.css)
+  skin/classic/messenger/overhaul/sounds/bell.wav              (../shared/mail/overhaul/sounds/bell.wav)
+  skin/classic/messenger/overhaul/sounds/chime.wav             (../shared/mail/overhaul/sounds/chime.wav)
+  skin/classic/messenger/overhaul/sounds/pop.wav               (../shared/mail/overhaul/sounds/pop.wav)
+  skin/classic/messenger/overhaul/sounds/soft.wav              (../shared/mail/overhaul/sounds/soft.wav)
 
 # The "new" folder in the path of these icons is actually old now, too.
   skin/classic/messenger/icons/new/compact/account-settings.svg (../shared/mail/icons/new/compact/account-settings.svg)

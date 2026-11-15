@@ -6,8 +6,13 @@
  * Overhaul design tokens (personal fork).
  *
  * Overrides the upstream color, layout and widget tokens to give the UI a
- * lighter, flatter look: cool neutral surfaces, softer borders, rounder
- * corners and a single fixed accent color.
+ * lighter, flatter look: tinted neutral surfaces, softer borders, rounder
+ * corners and a single accent color.
+ *
+ * Every theme preset only defines two inputs per color scheme:
+ *   --overhaul-primary-*  the accent color
+ *   --overhaul-tint-*     the hue mixed into neutral surfaces
+ * All surface, border and accent shades below are derived from them.
  *
  * This file is imported at the top of colors.css and variables.css so it is
  * present in every document and shadow root that uses the design system. The
@@ -15,8 +20,11 @@
  * `:root` / `:host` declarations regardless of load order, while still losing
  * to more specific upstream rules such as `[uidensity]` and `[lwtheme]`.
  *
- * Toggle with the `mail.overhaul.enabled` pref. High contrast mode is left
- * untouched.
+ * Prefs (all live-updating):
+ *   mail.overhaul.enabled  master switch
+ *   mail.overhaul.theme    default | ocean | forest | sunset | graphite
+ *   mail.overhaul.corners  sharp | soft | round
+ * High contrast mode is left untouched.
  */
 
 /* stylelint-disable-next-line media-query-no-invalid */
@@ -24,61 +32,73 @@
   @media not (prefers-contrast) {
     :root:not(:host),
     :host(:not(:root)) {
+      /* Theme inputs (default theme) */
+      --overhaul-primary-light: #2f6bed;
+      --overhaul-primary-dark: #6ea2ff;
+      --overhaul-tint-light: #3b6fd6;
+      --overhaul-tint-dark: #4a6fb5;
+
       /* Surfaces */
       --color-surface-base-light: #ffffff;
       --color-surface-raised-light: #ffffff;
-      --color-surface-subtle-light: #f1f4f9;
-      --color-surface-lower-light: #f6f8fb;
-      --color-surface-deep-light: #e6eaf1;
-      --color-surface-border-light: #e2e6ed;
-      --color-surface-border-intense-light: #b8c0cc;
+      --color-surface-subtle-light: color-mix(in srgb, var(--overhaul-tint-light) 7%, #fafafa);
+      --color-surface-lower-light: color-mix(in srgb, var(--overhaul-tint-light) 4%, #fcfcfc);
+      --color-surface-deep-light: color-mix(in srgb, var(--overhaul-tint-light) 11%, #ececee);
+      --color-surface-border-light: color-mix(in srgb, var(--overhaul-tint-light) 10%, #e2e2e6);
+      --color-surface-border-intense-light: color-mix(in srgb, var(--overhaul-tint-light) 14%, #b4b4bc);
 
-      --color-surface-base-dark: #15171c;
-      --color-surface-raised-dark: #1f2229;
-      --color-surface-subtle-dark: #1a1d23;
-      --color-surface-lower-dark: #111317;
-      --color-surface-deep-dark: #2a2e37;
-      --color-surface-border-dark: #2b3039;
-      --color-surface-border-intense-dark: #454c58;
+      --color-surface-base-dark: color-mix(in srgb, var(--overhaul-tint-dark) 6%, #131418);
+      --color-surface-raised-dark: color-mix(in srgb, var(--overhaul-tint-dark) 9%, #1d1e23);
+      --color-surface-subtle-dark: color-mix(in srgb, var(--overhaul-tint-dark) 8%, #18191d);
+      --color-surface-lower-dark: color-mix(in srgb, var(--overhaul-tint-dark) 5%, #0f1013);
+      --color-surface-deep-dark: color-mix(in srgb, var(--overhaul-tint-dark) 12%, #27282e);
+      --color-surface-border-dark: color-mix(in srgb, var(--overhaul-tint-dark) 12%, #2a2b31);
+      --color-surface-border-intense-dark: color-mix(in srgb, var(--overhaul-tint-dark) 14%, #44464e);
 
       /* Accent */
-      --color-primary-soft-light: #eef4ff;
-      --color-primary-default-light: #2f6bed;
-      --color-primary-hover-light: #2558cc;
-      --color-primary-pressed-light: #1e47a6;
+      --color-primary-soft-light: color-mix(in srgb, var(--overhaul-primary-light) 9%, #ffffff);
+      --color-primary-default-light: var(--overhaul-primary-light);
+      --color-primary-hover-light: color-mix(in srgb, var(--overhaul-primary-light) 85%, #000000);
+      --color-primary-pressed-light: color-mix(in srgb, var(--overhaul-primary-light) 70%, #000000);
 
-      --color-primary-soft-dark: #1c2740;
-      --color-primary-default-dark: #6ea2ff;
-      --color-primary-hover-dark: #8ab4ff;
-      --color-primary-pressed-dark: #a6c6ff;
+      --color-primary-soft-dark: color-mix(in srgb, var(--overhaul-primary-dark) 16%, #15161a);
+      --color-primary-default-dark: var(--overhaul-primary-dark);
+      --color-primary-hover-dark: color-mix(in srgb, var(--overhaul-primary-dark) 82%, #ffffff);
+      --color-primary-pressed-dark: color-mix(in srgb, var(--overhaul-primary-dark) 65%, #ffffff);
 
       /* Text */
       --color-text-base-light: #1b2230;
       --color-text-secondary-light: #4a5568;
       --color-text-muted-light: #6b7585;
-      --color-text-brand-light: #2558cc;
-      --color-text-highlight-light: #2f6bed;
+      --color-text-brand-light: var(--color-primary-hover-light);
+      --color-text-highlight-light: var(--overhaul-primary-light);
 
       --color-text-base-dark: #eceff4;
       --color-text-secondary-dark: #c3c9d4;
       --color-text-muted-dark: #8d96a5;
-      --color-text-brand-dark: #8ab4ff;
-      --color-text-highlight-dark: #6ea2ff;
+      --color-text-brand-dark: var(--color-primary-hover-dark);
+      --color-text-highlight-dark: var(--overhaul-primary-dark);
 
       /* Layout (see layout.css for the meaning of each level) */
-      --layout-background-0: light-dark(#ffffff, #15171c);
-      --layout-background-1: light-dark(#f6f8fb, #1a1d23);
-      --layout-background-2: light-dark(#eef1f6, #22262d);
-      --layout-background-3: light-dark(#e3e7ee, #2b3039);
-      --layout-background-4: light-dark(#d4dae3, #383e49);
+      --layout-background-0: light-dark(#ffffff, var(--color-surface-base-dark));
+      --layout-background-1: light-dark(color-mix(in srgb, var(--overhaul-tint-light) 4%, #fcfcfc), color-mix(in srgb, var(--overhaul-tint-dark) 8%, #18191d));
+      --layout-background-2: light-dark(color-mix(in srgb, var(--overhaul-tint-light) 7%, #f7f7f8), color-mix(in srgb, var(--overhaul-tint-dark) 10%, #1f2025));
+      --layout-background-3: light-dark(
+        color-mix(in srgb, var(--overhaul-tint-light) 11%, #ececee),
+        color-mix(in srgb, var(--overhaul-tint-dark) 12%, #282930)
+      );
+      --layout-background-4: light-dark(
+        color-mix(in srgb, var(--overhaul-tint-light) 16%, #dedee2),
+        color-mix(in srgb, var(--overhaul-tint-dark) 14%, #34363d)
+      );
 
       --layout-color-0: light-dark(#0f141e, #ffffff);
       --layout-color-1: light-dark(#1b2230, #eceff4);
       --layout-color-2: light-dark(#4a5568, #c3c9d4);
       --layout-color-3: light-dark(#7a8494, #8d96a5);
 
-      --layout-border-0: light-dark(#e6e9ef, #262a32);
-      --layout-border-1: light-dark(#cfd5de, #3a404b);
+      --layout-border-0: light-dark(color-mix(in srgb, var(--overhaul-tint-light) 8%, #e6e6ea), color-mix(in srgb, var(--overhaul-tint-dark) 10%, #25262b));
+      --layout-border-1: light-dark(color-mix(in srgb, var(--overhaul-tint-light) 12%, #cdcdd4), color-mix(in srgb, var(--overhaul-tint-dark) 12%, #393b43));
       --layout-border-2: light-dark(#8a93a3, #5a6270);
 
       /* Shape and elevation, also used by later overhaul stylesheets */
@@ -107,6 +127,74 @@
         --panel-background-color: var(--color-surface-raised);
         --panel-border-color: var(--color-surface-border);
         --panel-border-radius: var(--overhaul-radius-medium);
+      }
+    }
+
+    /* Theme presets: only the two inputs change. */
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.theme", "ocean") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-primary-light: #0e7490;
+        --overhaul-primary-dark: #22d3ee;
+        --overhaul-tint-light: #0891b2;
+        --overhaul-tint-dark: #0e7490;
+      }
+    }
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.theme", "forest") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-primary-light: #15803d;
+        --overhaul-primary-dark: #4ade80;
+        --overhaul-tint-light: #16a34a;
+        --overhaul-tint-dark: #166534;
+      }
+    }
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.theme", "sunset") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-primary-light: #c2410c;
+        --overhaul-primary-dark: #fb923c;
+        --overhaul-tint-light: #ea580c;
+        --overhaul-tint-dark: #9a3412;
+      }
+    }
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.theme", "graphite") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-primary-light: #3f3f46;
+        --overhaul-primary-dark: #d4d4d8;
+        --overhaul-tint-light: #71717a;
+        --overhaul-tint-dark: #52525b;
+      }
+    }
+
+    /* Corner styles ("soft" is the default above). */
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.corners", "sharp") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-radius-small: 2px;
+        --overhaul-radius-medium: 3px;
+        --overhaul-radius-large: 4px;
+      }
+    }
+
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.corners", "round") {
+      :root:not(:host),
+      :host(:not(:root)) {
+        --overhaul-radius-small: 10px;
+        --overhaul-radius-medium: 16px;
+        --overhaul-radius-large: 22px;
       }
     }
 

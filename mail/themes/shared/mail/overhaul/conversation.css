@@ -98,6 +98,20 @@
           }
         }
 
+        /* stylelint-disable-next-line media-query-no-invalid */
+        @media not -moz-pref("mail.overhaul.avatars") {
+          &[aria-expanded="false"] {
+            grid-template-columns: 1fr max-content;
+            grid-template-areas:
+              "author time"
+              "snippet snippet";
+
+            & .overhaul-avatar {
+              display: none;
+            }
+          }
+        }
+
         /* The open message shows its own header and quick reply. */
         &[aria-expanded="true"] {
           overflow: hidden;

@@ -345,6 +345,18 @@ export const MailNotificationManager = new (class {
    *   sound to be played (i.e. `mail.*.play_sound`).
    */
   playSound(prefBranch) {
+    // Overhaul (personal fork): a built-in sound chosen in Settings →
+    // Appearance → ThunderBirdX replaces the new mail sound.
+    if (prefBranch.root == "mail.biff.play_sound") {
+      const builtIn = Services.prefs.getStringPref("mail.overhaul.sound", "");
+      if (["chime", "pop", "bell", "soft"].includes(builtIn)) {
+        lazy.NotificationSounds.playCustomSound(
+          `chrome://messenger/skin/overhaul/sounds/${builtIn}.wav`
+        );
+        return;
+      }
+    }
+
     // Play the system sound.
     if (prefBranch.getIntPref(".type") == 0) {
       Cc["@mozilla.org/sound;1"]

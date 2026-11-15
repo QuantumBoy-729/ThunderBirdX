@@ -1645,3 +1645,22 @@ pref("mail.appearance.accentColor", "accent-color");
 // Personal fork: enable the overhauled look (see
 // mail/themes/shared/mail/overhaul/). Set to false for the upstream look.
 pref("mail.overhaul.enabled", true);
+// Personal fork: appearance options, set in Settings → Appearance → ThunderBirdX.
+// Theme: default, ocean, forest, sunset or graphite.
+pref("mail.overhaul.theme", "default");
+// Corners: sharp, soft or round.
+pref("mail.overhaul.corners", "soft");
+// App rail width: wide or slim.
+pref("mail.overhaul.rail", "wide");
+pref("mail.overhaul.avatars", true);
+pref("mail.overhaul.unread_bar", true);
+// Background behind the app chrome: none, aurora, dusk, meadow, midnight or
+// custom (uses mail.overhaul.background.image, a file:// URL).
+pref("mail.overhaul.background", "none");
+pref("mail.overhaul.background.image", "");
+// Readability veil over the background: none, light, medium or strong.
+pref("mail.overhaul.background.dim", "medium");
+pref("mail.overhaul.background.blur", false);
+// Built-in new mail sound: empty to use the General settings, or chime, pop,
+// bell or soft.
+pref("mail.overhaul.sound", "");
