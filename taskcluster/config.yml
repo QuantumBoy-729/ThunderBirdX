@@ -88,8 +88,10 @@ treeherder:
         'M-cf': 'Mochitests confirm failure'
         'M-msix': 'Mochitests from MSIX builds'
         'M-msix-cf': 'Mochitests confirm failure from MSIX builds'
+        'Ent': 'Thunderbird Enterprise release tasks'
         'Rpk-Ent': 'Enterprise repacks'
         'Rpk-Ent-Rpk': 'Enterprise repacks repackage'
+        'Rpk-Ent-Ms': 'Enterprise repacks MAR signing'
         'Rpk': 'Classic repacks'
         'MSI-Ent': "MSI Enterprise repacks"
         'MSIs-Ent': "MSI signed Enterprise repacks"
