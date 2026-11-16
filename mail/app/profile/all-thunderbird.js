@@ -1654,6 +1654,11 @@ pref("mail.overhaul.corners", "soft");
 pref("mail.overhaul.rail", "wide");
 pref("mail.overhaul.avatars", true);
 pref("mail.overhaul.unread_bar", true);
+// Show the start of each message's body in the message list cards.
+pref("mail.overhaul.preview", true);
+// Show senders by name only (0 = name and address, 1 = address only). The
+// address is still shown in the message header and in tooltips on hover.
+pref("mail.addressDisplayFormat", 2);
 // Background behind the app chrome: none, aurora, dusk, meadow, midnight or
 // custom (uses mail.overhaul.background.image, a file:// URL).
 pref("mail.overhaul.background", "none");

@@ -90,7 +90,19 @@
                 data-l10n-id="overhaul-sound-preview"/>
       </hbox>
 
+      <label data-l10n-id="overhaul-sender-names" control="overhaulSenderNames"/>
+      <menulist id="overhaulSenderNames" preference="mail.addressDisplayFormat">
+        <menupopup>
+          <menuitem value="2" data-l10n-id="overhaul-sender-names-name"/>
+          <menuitem value="0" data-l10n-id="overhaul-sender-names-full"/>
+          <menuitem value="1" data-l10n-id="overhaul-sender-names-email"/>
+        </menupopup>
+      </menulist>
+
       <html:div class="overhaul-checkboxes">
+        <checkbox id="overhaulPreview"
+                  data-l10n-id="overhaul-preview"
+                  preference="mail.overhaul.preview"/>
         <checkbox id="overhaulAvatars"
                   data-l10n-id="overhaul-avatars"
                   preference="mail.overhaul.avatars"/>

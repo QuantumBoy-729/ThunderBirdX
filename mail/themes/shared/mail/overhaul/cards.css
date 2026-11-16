@@ -13,7 +13,8 @@
 /* The quick action buttons live in the card template unconditionally, so hide
  * them unless the overhaul is enabled. */
 .overhaul-quick-actions,
-.overhaul-avatar {
+.overhaul-avatar,
+.overhaul-preview {
   display: none;
 }
 
@@ -118,7 +119,8 @@
       & .card-layout:not([data-properties~="dummy"]) .read-status-column {
         inline-size: 32px;
         justify-content: center;
-        margin-inline-end: 6px;
+        /* Leave room for the unread bar on the inline-start edge. */
+        margin-inline: 6px;
       }
 
       & .card-layout:not([data-properties~="dummy"]) .overhaul-avatar {
@@ -224,7 +226,7 @@
       :root:not([lwtheme]) #threadTree[rows="thread-card"] .card-layout:not([data-properties~="dummy"]) {
         & .read-status-column {
           inline-size: var(--read-status-size);
-          margin-inline-end: 0;
+          margin-inline: 6px 0;
         }
 
         & .overhaul-avatar {
@@ -233,6 +235,45 @@
 
         & .read-status {
           display: var(--read-status-display, none);
+        }
+      }
+    }
+
+    /* Message preview: the start of the body next to the subject, in the
+     * card's existing rows so the card height doesn't change. */
+    /* stylelint-disable-next-line media-query-no-invalid */
+    @media -moz-pref("mail.overhaul.preview") {
+      :root:not([lwtheme]) #threadTree[rows="thread-card"] {
+        & .card-layout:not([data-properties~="dummy"]) .overhaul-preview {
+          display: block;
+          grid-area: preview;
+          min-inline-size: 0;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          color: var(--color-text-muted);
+          font-weight: normal;
+        }
+
+        /* 3 rows: subject on its own row, preview on the row below it. */
+        & .card-layout:not([data-properties~="dummy"]) .thread-card-dynamic-row {
+          grid-template:
+            "subject subject subject" max-content
+            "button preview info" minmax(auto, 1fr)
+            / auto minmax(0, 1fr) auto;
+        }
+
+        /* 2 rows: preview after the subject on the same line. */
+        &.cards-row-compact .card-layout:not([data-properties~="dummy"]) {
+          & .thread-card-dynamic-row {
+            grid-template:
+              "button subject preview info" max-content
+              / auto minmax(0, max-content) minmax(0, 1fr) auto;
+          }
+
+          & .overhaul-preview:not(:empty)::before {
+            content: "– ";
+          }
         }
       }
     }

@@ -9,6 +9,78 @@ import "chrome://messenger/content/thread-card-tags.mjs";
 const { getAvatarData, isOverhaulEnabled } = ChromeUtils.importESModule(
   "moz-src:///comm/mail/modules/OverhaulUtils.sys.mjs"
 );
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+
+const lazy = {};
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "showPreview",
+  "mail.overhaul.preview",
+  true,
+  () => window.threadTree?.invalidate()
+);
+
+/**
+ * Overhaul (personal fork): fetches the "preview" property (the start of the
+ * message body) for messages that don't have one yet, in batches per folder,
+ * and redraws the message list once the text is available.
+ */
+const PreviewFetcher = {
+  /** @type {Map<nsIMsgFolder, nsMsgKey[]>} */
+  pending: new Map(),
+  /** Messages already asked for, as "folderURI#key", so each is fetched once. */
+  requested: new Set(),
+  flushTimer: null,
+  redrawTimer: null,
+
+  /**
+   * @param {nsIMsgDBHdr} hdr
+   */
+  request(hdr) {
+    const folder = hdr.folder;
+    if (!folder) {
+      return;
+    }
+    const id = `${folder.URI}#${hdr.messageKey}`;
+    if (this.requested.has(id)) {
+      return;
+    }
+    this.requested.add(id);
+    if (!this.pending.has(folder)) {
+      this.pending.set(folder, []);
+    }
+    this.pending.get(folder).push(hdr.messageKey);
+    this.flushTimer ??= setTimeout(() => this.flush(), 50);
+  },
+
+  flush() {
+    this.flushTimer = null;
+    const listener = {
+      OnStartRunningUrl() {},
+      OnStopRunningUrl: () => this.redraw(),
+    };
+    for (const [folder, keys] of this.pending) {
+      try {
+        if (!folder.fetchMsgPreviewText(keys, listener)) {
+          this.redraw();
+        }
+      } catch {
+        // Some folder types (news, feeds) can't provide previews; those cards
+        // simply show no preview.
+      }
+    }
+    this.pending.clear();
+  },
+
+  redraw() {
+    this.redrawTimer ??= setTimeout(() => {
+      this.redrawTimer = null;
+      window.threadTree?.invalidate();
+    }, 100);
+  },
+};
 
 /**
  * The tr element row of the TreeView table for the cards view layout.
@@ -46,6 +118,23 @@ class ThreadCard extends TreeViewTableRow {
     this.sortHeaderDetails = this.querySelector(".sort-header-details");
     this.statusIndicator = this.querySelector(".read-status");
     this.avatar = this.querySelector(".overhaul-avatar");
+    this.preview = this.querySelector(".overhaul-preview");
+  }
+
+  /**
+   * Overhaul (personal fork): show the start of the message body, fetching it
+   * first if the message doesn't have it yet.
+   */
+  #fillPreview() {
+    let text = "";
+    if (isOverhaulEnabled() && lazy.showPreview) {
+      const hdr = this.view.getMsgHdrAt(this._index);
+      text = hdr?.getStringProperty("preview") ?? "";
+      if (!text && hdr) {
+        PreviewFetcher.request(hdr);
+      }
+    }
+    this.preview.textContent = text.replace(/\s+/g, " ").trim();
   }
 
   fillRow() {
@@ -136,6 +225,7 @@ class ThreadCard extends TreeViewTableRow {
       this.avatar.textContent = initials;
       this.avatar.style.setProperty("--avatar-hue", hue);
     }
+    this.#fillPreview();
     this.dateLine.textContent = data.date;
 
     this.threadCardTags.setAttribute("tags", data.tagKeys);

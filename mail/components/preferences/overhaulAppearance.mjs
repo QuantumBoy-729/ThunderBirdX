@@ -24,7 +24,12 @@ Preferences.addAll([
   { id: "mail.overhaul.background.dim", type: "string" },
   { id: "mail.overhaul.background.blur", type: "bool" },
   { id: "mail.overhaul.sound", type: "string" },
+  { id: "mail.overhaul.preview", type: "bool" },
 ]);
+// Also on the General pane, which usually registers it first.
+if (!Preferences.get("mail.addressDisplayFormat")) {
+  Preferences.add({ id: "mail.addressDisplayFormat", type: "int" });
+}
 
 export const overhaulAppearance = {
   init() {

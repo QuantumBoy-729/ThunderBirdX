@@ -7,6 +7,23 @@
  */
 
 /**
+ * The message list caches each message's sender text in the folder database
+ * and only rebuilds it when mail.displayname.version changes, which happens
+ * when the address display prefs are changed but not when their defaults are.
+ * ThunderBirdX changed the default of mail.addressDisplayFormat (name only),
+ * so bump the version once per profile to drop the cached "Name <address>".
+ * This module is loaded before the first message card is drawn.
+ */
+const ADDRESS_FORMAT_REFRESHED = "mail.overhaul.addressFormatRefreshed";
+if (!Services.prefs.getBoolPref(ADDRESS_FORMAT_REFRESHED, false)) {
+  Services.prefs.setIntPref(
+    "mail.displayname.version",
+    Services.prefs.getIntPref("mail.displayname.version", 0) + 1
+  );
+  Services.prefs.setBoolPref(ADDRESS_FORMAT_REFRESHED, true);
+}
+
+/**
  * Whether the overhauled UI is enabled.
  *
  * @returns {boolean}
