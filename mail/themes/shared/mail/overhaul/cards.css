@@ -155,7 +155,8 @@
         display: none;
       }
 
-      /* Hover quick actions replace the date and menu button. */
+      /* Hover quick actions replace the date; the menu button stays so it can
+       * still be clicked. */
       & .card-layout:not([data-properties~="dummy"]) {
         & .overhaul-quick-actions {
           display: none;
@@ -169,7 +170,7 @@
             display: inline-flex;
           }
 
-          & .card-container :is(.date, .tree-button-more) {
+          & .card-container .date {
             display: none;
           }
         }

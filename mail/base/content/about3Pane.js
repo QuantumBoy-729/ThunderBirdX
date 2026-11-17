@@ -1748,10 +1748,14 @@ var folderPane = {
     this._isCompact = XULStoreUtils.isItemCompact("messenger", "folderTree");
     let activeModes = XULStoreUtils.getValue("messenger", "folderTree", "mode");
     // Overhaul (personal fork): new profiles start with unified folders above
-    // the per-account folders.
+    // the per-account folders, once there is a mail account to unify. Without
+    // one the unified folders are empty, and opening them at startup throws.
     if (
       !activeModes &&
-      Services.prefs.getBoolPref("mail.overhaul.enabled", false)
+      Services.prefs.getBoolPref("mail.overhaul.enabled", false) &&
+      MailServices.accounts.accounts.some(
+        account => account.incomingServer?.type != "none"
+      )
     ) {
       activeModes = "smart,all";
     }

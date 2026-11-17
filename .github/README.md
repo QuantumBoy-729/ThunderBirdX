@@ -1,140 +1,191 @@
-# ThunderBirdX
+<p align="center">
+  <img src="../mail/branding/thunderbirdx/default256.png" width="128" height="128" alt="ThunderBirdX logo">
+</p>
 
-ThunderBirdX is a personal fork of [Mozilla Thunderbird](https://github.com/thunderbird/thunderbird-desktop)
-focused on a cleaner, more modern interface and everyday productivity features:
-one inbox for all your accounts, fast triage, and tools that help you get through
-a busy mailbox.
+<h1 align="center">ThunderBirdX</h1>
 
-It stays close to upstream Thunderbird, so it keeps Thunderbird's privacy
-defaults, open standards support and add-on ecosystem, and regularly pulls in
-upstream fixes.
+<p align="center">
+  A modern, free email app for Windows, macOS and Linux, built on Thunderbird.
+</p>
 
-> **Status:** early development. The new interface is usable day to day; most
-> of the new productivity features are still planned. The table below shows
-> exactly what exists today.
+<p align="center">
+  <a href="https://github.com/QuantumBoy-729/ThunderBirdX/releases/latest"><b>Download</b></a> ·
+  <a href="#features">Features</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#coming-from-thunderbird">Coming from Thunderbird</a> ·
+  <a href="#building-from-source">Build from source</a>
+</p>
 
-## Download
+---
 
-Builds for Windows, macOS (Apple silicon) and Linux are on the
-[Releases page](https://github.com/QuantumBoy-729/ThunderBirdX/releases).
-They are development builds based on Thunderbird Daily, are not code signed,
-and do not update automatically.
+ThunderBirdX is a desktop email client with a clean, modern interface: one
+inbox for all your accounts, message cards with previews and sender avatars,
+quick actions on hover, and a look you can make your own with themes,
+backgrounds and sounds.
 
-## Feature status
+Under the hood it is built on [Mozilla Thunderbird](https://www.thunderbird.net),
+so it keeps everything that makes Thunderbird dependable: support for almost
+any email provider, a calendar, an address book, end-to-end encryption with
+OpenPGP and S/MIME, and thousands of add-ons.
 
-✅ Available · 🚧 In progress · 📋 Planned
+- **Free, always.** No paid tiers, no subscriptions, no features held back.
+- **Private by default.** No tracking of you or of the people you email, no
+  read-tracking pixels, and no AI or cloud features unless you turn them on.
+- **Open source** under the [Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/).
 
-### Email and accounts
+> **Status: early release (0.x).** The new interface is ready for everyday use.
+> Several planned productivity features are still in development; see
+> [Features](#features) for exactly what's available today.
 
-| Feature | Status | Notes |
-| --- | --- | --- |
-| Unified inbox across all accounts | ✅ | On by default for new profiles |
-| IMAP and POP3 (Gmail, Outlook, Yahoo, iCloud, …) | ✅ | From Thunderbird |
-| Microsoft Exchange | 🚧 | EWS and Graph support are arriving upstream |
-| Templates | ✅ | From Thunderbird |
-| Multiple signatures | ✅ | One per identity, from Thunderbird |
-| Filters and adaptive spam filtering | ✅ | From Thunderbird |
-| Read receipts | ✅ | Recipient-approved receipts, from Thunderbird |
-| Undo send | 📋 | Short delay before sending with an Undo bar |
-| Snooze | 📋 | Hide a message and bring it back at a chosen time |
-| Scheduled send | 📋 | Send a message automatically at a chosen time |
+## Features
 
-### Reading and triage
+✅ Available · 🚧 In testing · 📋 Planned
 
-| Feature | Status | Notes |
-| --- | --- | --- |
-| Hover quick actions on messages | ✅ | Archive, mark read or unread, delete |
-| Keyboard shortcuts | ✅ | Customizable, from Thunderbird |
-| Attachment search | ✅ | Via global search, from Thunderbird |
-| Sender avatars | ✅ | Letter avatars in the message list, conversation view and message header |
-| Simplified message header | ✅ | Large sender avatar and subject, icon-only actions (customizable as before) |
-| Conversation view | 🚧 | Built on Thunderbird's experimental conversation view; on by default in development builds, still being tested |
-| Quick reply | 🚧 | Type under a message to open a pre-filled reply you review before sending; still being tested |
-| Fully inline reply (no separate window) | 📋 | |
-| Speed Reader | 📋 | Word-by-word reading view, roughly 250 to 1,000+ words per minute |
-
-### Interface and customization
+### A modern inbox
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Refreshed design: softer surfaces, rounder controls, one accent color | ✅ | Light and dark mode |
-| App rail on the left | ✅ | Mail, address book, calendar, tasks, chat |
-| Flat message cards with an unread marker | ✅ | |
-| Calendar with day, week and month views | ✅ | From Thunderbird |
-| Light and dark themes | ✅ | Plus Thunderbird's theme add-ons |
-| Theme presets | ✅ | Default (blue), Ocean, Forest, Sunset, Graphite, each in light and dark |
-| Shape and layout options | ✅ | Sharp, soft or round corners; wide or slim app rail; avatars and unread bar can be turned off |
-| Custom backgrounds | ✅ | Gradient presets or your own image behind the app chrome, with a readability veil and optional blur |
-| Notification sound choices | ✅ | Chime, Pop, Bell or Soft for new mail, with a preview button |
+| Unified inbox across all accounts | ✅ | On by default |
+| Message cards with preview text | ✅ | The first line of each message under its subject |
+| Sender avatars | ✅ | In the message list, conversation view and message header |
+| Senders shown by name | ✅ | Show names, addresses, or both |
+| Hover quick actions | ✅ | Archive, mark read or unread, delete |
+| Clean message header | ✅ | Large sender avatar and subject, icon-only actions |
+| Conversation view | 🚧 | Read a whole thread in one place |
+| Quick reply | 🚧 | Type a reply under a message, review it before sending |
+| Fully inline reply | 📋 | Reply without opening a separate window |
+| Speed Reader | 📋 | Word-by-word reading at 250 to 1,000+ words per minute |
 
-All of these are in **Settings → Appearance → ThunderBirdX** and apply
-immediately, without a restart.
+### Make it yours
 
-### Integrations and AI
+All in **Settings → Appearance → ThunderBirdX**; changes apply instantly.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Web apps in the app rail (chat, storage, task tools, …) | 📋 | Built on Thunderbird's spaces; add-ons can already add spaces today |
-| AI writing assistant | 📋 | Optional and off by default. Bring your own API key, choose your provider |
+| Light and dark mode | ✅ | Follows your system, or choose one |
+| Theme presets | ✅ | Default (blue), Ocean, Forest, Sunset, Graphite |
+| Shape and layout | ✅ | Sharp, soft or round corners; wide or slim app rail |
+| Backgrounds | ✅ | Gradient presets or your own image, with a readability veil and blur |
+| New mail sounds | ✅ | Chime, Pop, Bell or Soft |
+| Classic look | ✅ | Untick **Use the ThunderBirdX look** for the standard Thunderbird design |
 
-Extensions come from Thunderbird's existing [add-ons site](https://addons.thunderbird.net);
-ThunderBirdX does not run its own app store.
+### Email, calendar and contacts
 
-### Platforms
+| Feature | Status | Notes |
+| --- | --- | --- |
+| IMAP and POP3 (Gmail, Outlook.com, Yahoo, iCloud, Fastmail, …) | ✅ | |
+| Microsoft Exchange | 🚧 | Exchange (EWS) support is arriving from Thunderbird |
+| Calendar and tasks | ✅ | Day, week and month views; CalDAV and Google Calendar |
+| Address book | ✅ | CardDAV and LDAP |
+| OpenPGP and S/MIME encryption | ✅ | |
+| Templates, signatures, filters, spam filtering | ✅ | |
+| Read receipts | ✅ | Only when the recipient agrees to send one |
+| Undo send | 📋 | |
+| Snooze | 📋 | |
+| Scheduled send | 📋 | |
 
-ThunderBirdX builds for Windows, macOS and Linux, like Thunderbird.
+### Integrations
 
-ThunderBirdX is and will always be free: no paid tiers, no subscriptions and no
-features held back. It is open source under the
-[Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/).
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Add-ons | ✅ | From [addons.thunderbird.net](https://addons.thunderbird.net); there is no separate store |
+| Web apps in the app rail | 📋 | Chat, storage and task tools next to your mail |
+| AI writing assistant | 📋 | Optional and off by default; bring your own API key and choose your provider |
+
+## Install
+
+Download the file for your system from the
+[latest release](https://github.com/QuantumBoy-729/ThunderBirdX/releases/latest).
+
+| System | File | How to install |
+| --- | --- | --- |
+| Windows 10 and 11 (64-bit) | `…-windows-x64-setup.exe` | Run the installer |
+| Windows, portable | `…-windows-x64.zip` | Unzip anywhere and run `thunderbird.exe` |
+| macOS (Apple silicon) | `…-macos-arm64.dmg` | Open it and drag ThunderBirdX to Applications |
+| Linux (64-bit) | `…-linux-x64.tar.xz` | Extract and run `thunderbird` |
+
+ThunderBirdX is not yet code signed, so your system may warn you the first time:
+
+- **Windows:** if SmartScreen says "Windows protected your PC", choose
+  **More info → Run anyway**.
+- **macOS:** right-click ThunderBirdX in Applications and choose **Open**. If
+  macOS says the app is damaged, run this in Terminal, then open it again:
+  ```bash
+  xattr -cr /Applications/ThunderBirdX.app
+  ```
+
+ThunderBirdX does not update itself yet. Watch the
+[Releases page](https://github.com/QuantumBoy-729/ThunderBirdX/releases)
+(**Watch → Custom → Releases** on GitHub) to hear about new versions.
+
+To check a download, compare it with `SHA256SUMS.txt` from the same release.
+
+## Coming from Thunderbird
+
+ThunderBirdX can sit next to Thunderbird. It stores its data in the same place
+as Thunderbird but starts with its own, empty profile, so your existing setup
+is not touched.
+
+- **Start fresh:** add your accounts in ThunderBirdX as you would in any email app.
+- **Bring your Thunderbird data:** in ThunderBirdX, open the app menu (☰) and
+  choose **Tools → Import**, then pick Thunderbird. Your Thunderbird profile is
+  copied, not moved.
+- **Use the same profile in both:** start ThunderBirdX with `-P` to open the
+  profile manager and pick your Thunderbird profile. Don't run both apps on the
+  same profile at the same time, and back the profile up first.
 
 ## Roadmap
 
-1. **Design tokens** ✅. New color, shape and spacing foundations, in light and dark.
-2. **App shell** ✅. App rail, toolbar and tabs.
-3. **Folder pane and message list** ✅. Unified folders by default, flat cards,
-   hover quick actions.
-4. **Reading pane** 🚧. Simpler message header and sender avatars are done;
-   conversation view and quick reply are in testing; fully inline reply is next.
-5. **Sending** 📋. Undo send, scheduled send.
-6. **Triage** 📋. Snooze, Speed Reader.
-7. **Compose and secondary screens** 📋. Matching design for the compose window,
+1. **Design foundations** ✅: colors, shapes and spacing in light and dark.
+2. **App shell** ✅: app rail, toolbar and tabs.
+3. **Message list** ✅: unified inbox, message cards, previews, quick actions.
+4. **Reading** 🚧: simpler header and avatars are done; conversation view and
+   quick reply are in testing; fully inline reply is next.
+5. **Sending** 📋: undo send, scheduled send.
+6. **Triage** 📋: snooze, Speed Reader.
+7. **Compose and other screens** 📋: matching design for writing mail, the
    address book, calendar and settings.
-8. **Integrations and AI** 📋. Web apps in the app rail, optional AI writing
+8. **Integrations and AI** 📋: web apps in the app rail, optional AI writing
    assistant.
-9. **Polish** 🚧. Theme presets, shape and layout options, custom backgrounds
-   and sounds are done; motion and an accessibility review are next.
+9. **Polish** 🚧: themes, backgrounds and sounds are done; animations,
+   an accessibility review and code signing are next.
 
-## Design principles
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
 
-- **Stay close to upstream.** New styles live in separate files under
-  `mail/themes/shared/mail/overhaul/`, and changes to upstream files are kept
-  small, so upstream updates merge cleanly.
-- **Everything can be switched off.** Untick **Use the ThunderBirdX look** in
-  Settings → Appearance (the `mail.overhaul.enabled` preference) to get the
-  standard Thunderbird look back.
-- **Accessibility first.** High contrast mode is never restyled, and new
-  controls get keyboard and screen reader support.
-- **Privacy by default.** No tracking of you or of the people you email (no
-  read-tracking pixels), and no AI or cloud features unless you turn them on.
+## Feedback and help
 
-## Building
+- **Found a bug or have an idea?** Open an
+  [issue](https://github.com/QuantumBoy-729/ThunderBirdX/issues). Please include
+  your ThunderBirdX version (**Help → About ThunderBirdX**) and your system.
+- **Security problem?** Please report it privately; see [SECURITY.md](SECURITY.md).
+- **Want to help?** See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-ThunderBirdX builds like Thunderbird: this repository is checked out as `comm/`
-inside a Firefox source checkout.
+ThunderBirdX is an independent project. Please don't report ThunderBirdX
+problems to Mozilla or the Thunderbird team.
+
+## Building from source
+
+ThunderBirdX builds the same way as Thunderbird: this repository is checked
+out as `comm/` inside a Firefox source checkout.
 
 ```bash
 git clone https://github.com/mozilla-firefox/firefox.git
+```
+
+```bash
 cd firefox
+git checkout $(curl -fsSL https://raw.githubusercontent.com/QuantumBoy-729/ThunderBirdX/overhaul/.github/release/gecko-rev)
 git clone https://github.com/QuantumBoy-729/ThunderBirdX.git comm
 ```
 
-Create a `mozconfig` file in the `firefox` folder. An artifact build downloads
-prebuilt binaries and only builds the front end, which takes a few minutes:
+Create a file named `mozconfig` in the `firefox` folder. This "artifact build"
+downloads prebuilt binaries and only builds the app's interface, which takes a
+few minutes:
 
 ```
 ac_add_options --enable-project=comm/mail
 ac_add_options --enable-artifact-builds
+ac_add_options --with-branding=comm/mail/branding/thunderbirdx
 mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-tb-artifact
 ```
 
@@ -153,34 +204,48 @@ Then bootstrap, build and run. On Windows, run these from the
 ./mach run
 ```
 
-After the first build, `./mach build faster` is enough for front-end changes.
-See the [Building Thunderbird guide](https://developer.thunderbird.net/thunderbird-development/building-thunderbird)
-for more detail.
+After the first build, `./mach build faster` is enough for interface changes.
+The [Thunderbird build guide](https://developer.thunderbird.net/thunderbird-development/building-thunderbird)
+has more detail, including full (non-artifact) builds.
 
-## Releasing
+### How the code is organized
+
+- `mail/themes/shared/mail/overhaul/`: the ThunderBirdX design, as stylesheets
+  that sit on top of Thunderbird's. Changes to Thunderbird's own files are kept
+  small so upstream updates merge cleanly.
+- `mail/branding/thunderbirdx/`: name, logo and icons. The logo artwork and the
+  scripts that generate the icons are in `source/`.
+- `mail/modules/OverhaulUtils.sys.mjs`: shared code for avatars and quick reply.
+- `mail/components/preferences/overhaulAppearance.mjs`: the ThunderBirdX
+  settings section.
+
+### Releases
 
 Releases are built by GitHub Actions ([release.yml](workflows/release.yml)):
 
-1. Push a tag such as `v0.1.0`, or run the **Release** workflow from the
+1. Push a tag such as `v0.2.0`, or run the **Release** workflow from the
    Actions tab and enter a version.
-2. The workflow makes artifact builds for Windows, Linux and macOS with the
-   ThunderBirdX branding in `mail/branding/thunderbirdx/` and the settings in
-   [release/mozconfig](release/mozconfig).
-3. It attaches the packages and checksums to a **draft** release. Review the
-   draft, then publish it.
+2. The workflow builds Windows, Linux and macOS packages with the settings in
+   [release/mozconfig](release/mozconfig) and attaches them, with checksums
+   and the notes from [release/notes.md](release/notes.md), to a **draft**
+   release.
+3. Review the draft, then publish it.
 
-Artifact builds reuse Mozilla's prebuilt Thunderbird Daily binaries, so the
-Firefox source must match the Thunderbird code: [release/gecko-rev](release/gecko-rev)
-pins the Firefox revision used for the build.
+Artifact builds reuse Mozilla's prebuilt binaries, so the Firefox source must
+match the Thunderbird code it is paired with: [release/gecko-rev](release/gecko-rev)
+pins that Firefox revision. Every Monday, the **Upstream sync** workflow
+([upstream-sync.yml](workflows/upstream-sync.yml)) opens a pull request that
+merges the latest Thunderbird changes and updates the pin.
 
-Every Monday, the **Upstream sync** workflow ([upstream-sync.yml](workflows/upstream-sync.yml))
-opens a pull request that merges upstream Thunderbird and updates that pin. If
-the merge has conflicts, the run fails and lists the files to merge by hand.
+## License and trademarks
 
-## Relationship to Thunderbird
+ThunderBirdX is free software under the
+[Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/), like the
+Thunderbird code it is built on. Thanks to everyone who builds Thunderbird.
 
-ThunderBirdX is an independent fork and is not affiliated with or endorsed by
-MZLA Technologies or the Mozilla Foundation. "Thunderbird" is a trademark of the
-Mozilla Foundation. For the official app, visit [thunderbird.net](https://www.thunderbird.net).
+ThunderBirdX is an independent project. It is not affiliated with or endorsed
+by MZLA Technologies or the Mozilla Foundation. Thunderbird and Mozilla are
+trademarks of the Mozilla Foundation. For the official Thunderbird app, visit
+[thunderbird.net](https://www.thunderbird.net).
 
 Thunderbird's own README is in the root of this repository.

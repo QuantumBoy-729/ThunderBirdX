@@ -104,6 +104,6 @@ overhaul-sender-names-email =
 overhaul-preview =
     .label = Show message preview text
 overhaul-avatars =
-    .label = Show sender avatars
+    .label = Show sender avatars in the message list
 overhaul-unread-bar =
     .label = Mark unread messages with an accent bar
