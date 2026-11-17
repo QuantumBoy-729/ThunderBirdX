@@ -1656,6 +1656,11 @@ pref("mail.overhaul.avatars", true);
 pref("mail.overhaul.unread_bar", true);
 // Show the start of each message's body in the message list cards.
 pref("mail.overhaul.preview", true);
+// ThunderBirdX update check (see ThunderBirdXUpdates.sys.mjs). The version
+// itself, mail.thunderbirdx.version, is set by the branding at release time.
+pref("mail.thunderbirdx.update.autoCheck", true);
+pref("mail.thunderbirdx.update.lastCheck", 0);
+pref("mail.thunderbirdx.update.dismissed", "");
 // Show senders by name only (0 = name and address, 1 = address only). The
 // address is still shown in the message header and in tooltips on hover.
 pref("mail.addressDisplayFormat", 2);

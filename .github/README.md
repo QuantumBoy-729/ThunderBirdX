@@ -31,6 +31,8 @@ OpenPGP and S/MIME, and thousands of add-ons.
 - **Free, always.** No paid tiers, no subscriptions, no features held back.
 - **Private by default.** No tracking of you or of the people you email, no
   read-tracking pixels, and no AI or cloud features unless you turn them on.
+  The only connection ThunderBirdX adds is a once-a-day check of GitHub for a
+  new version, which you can turn off.
 - **Open source** under the [Mozilla Public License 2.0](https://www.mozilla.org/MPL/2.0/).
 
 > **Status: early release (0.x).** The new interface is ready for everyday use.
@@ -114,11 +116,19 @@ ThunderBirdX is not yet code signed, so your system may warn you the first time:
   xattr -cr /Applications/ThunderBirdX.app
   ```
 
-ThunderBirdX does not update itself yet. Watch the
-[Releases page](https://github.com/QuantumBoy-729/ThunderBirdX/releases)
-(**Watch → Custom → Releases** on GitHub) to hear about new versions.
-
 To check a download, compare it with `SHA256SUMS.txt` from the same release.
+
+### Updates
+
+ThunderBirdX checks for a new version once a day and shows a bar at the
+bottom of the window when one is out. Choose **Download** to open its release
+page, then install it in the same place as your current version (the
+installer does this by default; for the zip, unpack it over the old folder),
+so it keeps using your mail and settings.
+
+To check by hand, or to turn the daily check off, go to
+**Settings → Appearance → ThunderBirdX → Updates**. ThunderBirdX doesn't
+download or install anything by itself.
 
 ## Coming from Thunderbird
 

@@ -4,6 +4,10 @@
 
 // ThunderBirdX (personal fork) branding prefs, based on the Daily branding.
 
+// This build's ThunderBirdX version, used by the update check. Release builds
+// replace it (see .github/release/build.sh); 0.0.0 means a development build.
+pref("mail.thunderbirdx.version", "0.0.0");
+
 // No start page: the Thunderbird start page is for Mozilla's own builds.
 pref("mailnews.start_page.enabled", false);
 pref("mailnews.start_page.url", "about:blank");

@@ -103,6 +103,29 @@ overhaul-sender-names-email =
     .label = Email address only
 overhaul-preview =
     .label = Show message preview text
+overhaul-updates =
+    .value = Updates
+overhaul-updates-auto =
+    .label = Check for updates automatically
+overhaul-updates-check =
+    .label = Check now
+overhaul-updates-checking = Checking for updates…
+# $version (String) - The installed ThunderBirdX version, e.g. 0.1.0.
+overhaul-updates-latest = You have the latest version ({ $version }).
+# $version (String) - The newest ThunderBirdX version, e.g. 0.2.0.
+overhaul-updates-available = ThunderBirdX { $version } is available.
+overhaul-updates-download =
+    .label = Download
+overhaul-updates-error = Couldn’t check for updates. Check your internet connection and try again.
+overhaul-updates-dev = This is a development build, so there are no updates to check for.
+# $version (String) - The newest ThunderBirdX version, e.g. 0.2.0.
+overhaul-update-notification = ThunderBirdX { $version } is available.
+overhaul-update-notification-download =
+    .label = Download
+    .accesskey = D
+overhaul-update-notification-later =
+    .label = Not now
+    .accesskey = N
 overhaul-avatars =
     .label = Show sender avatars in the message list
 overhaul-unread-bar =

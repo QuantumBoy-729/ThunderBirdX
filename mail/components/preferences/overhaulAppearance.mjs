@@ -10,6 +10,9 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   MailNotificationManager:
     "resource:///modules/MailNotificationManager.sys.mjs",
+  openLinkExternally: "resource:///modules/LinkHelper.sys.mjs",
+  ThunderBirdXUpdates:
+    "moz-src:///comm/mail/modules/ThunderBirdXUpdates.sys.mjs",
 });
 
 Preferences.addAll([
@@ -25,6 +28,7 @@ Preferences.addAll([
   { id: "mail.overhaul.background.blur", type: "bool" },
   { id: "mail.overhaul.sound", type: "string" },
   { id: "mail.overhaul.preview", type: "bool" },
+  { id: "mail.thunderbirdx.update.autoCheck", type: "bool" },
 ]);
 // Also on the General pane, which usually registers it first.
 if (!Preferences.get("mail.addressDisplayFormat")) {
@@ -48,6 +52,55 @@ export const overhaulAppearance = {
     document
       .getElementById("overhaulSoundPreview")
       .addEventListener("command", () => this.previewSound());
+    document
+      .getElementById("overhaulUpdateCheck")
+      .addEventListener("command", () => this.checkForUpdates());
+    document
+      .getElementById("overhaulUpdateDownload")
+      .addEventListener("command", () =>
+        lazy.openLinkExternally(this._updateUrl)
+      );
+    // Development builds have nothing to check against.
+    document.getElementById("overhaulUpdateAuto").disabled =
+      lazy.ThunderBirdXUpdates.isDevBuild;
+  },
+
+  /**
+   * Check GitHub for a newer ThunderBirdX release and show the result.
+   */
+  async checkForUpdates() {
+    const checkButton = document.getElementById("overhaulUpdateCheck");
+    const statusRow = document.getElementById("overhaulUpdateStatusRow");
+    const statusText = document.getElementById("overhaulUpdateStatus");
+    const download = document.getElementById("overhaulUpdateDownload");
+
+    checkButton.disabled = true;
+    download.hidden = true;
+    statusRow.hidden = false;
+    document.l10n.setAttributes(statusText, "overhaul-updates-checking");
+
+    const result = await lazy.ThunderBirdXUpdates.check();
+    checkButton.disabled = false;
+
+    switch (result.status) {
+      case "update":
+        this._updateUrl = result.url;
+        download.hidden = false;
+        document.l10n.setAttributes(statusText, "overhaul-updates-available", {
+          version: result.latestVersion,
+        });
+        break;
+      case "current":
+        document.l10n.setAttributes(statusText, "overhaul-updates-latest", {
+          version: result.currentVersion,
+        });
+        break;
+      case "dev":
+        document.l10n.setAttributes(statusText, "overhaul-updates-dev");
+        break;
+      default:
+        document.l10n.setAttributes(statusText, "overhaul-updates-error");
+    }
   },
 
   /**
@@ -56,7 +109,7 @@ export const overhaulAppearance = {
   updateDisabledState() {
     const enabled = Preferences.get("mail.overhaul.enabled").value;
     for (const element of document.querySelectorAll(
-      "#overhaulOptions :is(menulist, checkbox, button)"
+      "#overhaulOptions :is(menulist, checkbox, button):not(.overhaul-always-enabled)"
     )) {
       element.disabled = !enabled;
     }

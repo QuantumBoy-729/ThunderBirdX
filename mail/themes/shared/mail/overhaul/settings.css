@@ -20,6 +20,15 @@
   }
 }
 
+.overhaul-update-controls {
+  gap: 12px;
+}
+
+.overhaul-update-status {
+  grid-column: 2;
+  gap: 12px;
+}
+
 .overhaul-checkboxes {
   grid-column: 1 / -1;
   display: flex;

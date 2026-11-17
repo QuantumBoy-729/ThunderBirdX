@@ -110,6 +110,25 @@
                   data-l10n-id="overhaul-unread-bar"
                   preference="mail.overhaul.unread_bar"/>
       </html:div>
+
+      <!-- Updates apply with either look, so these stay enabled. -->
+      <label data-l10n-id="overhaul-updates" control="overhaulUpdateAuto"/>
+      <hbox align="center" class="overhaul-update-controls">
+        <checkbox id="overhaulUpdateAuto"
+                  class="overhaul-always-enabled"
+                  data-l10n-id="overhaul-updates-auto"
+                  preference="mail.thunderbirdx.update.autoCheck"/>
+        <button id="overhaulUpdateCheck"
+                class="overhaul-always-enabled"
+                data-l10n-id="overhaul-updates-check"/>
+      </hbox>
+      <hbox id="overhaulUpdateStatusRow" class="overhaul-update-status" align="center" hidden="true">
+        <description id="overhaulUpdateStatus" aria-live="polite"/>
+        <button id="overhaulUpdateDownload"
+                class="overhaul-always-enabled"
+                data-l10n-id="overhaul-updates-download"
+                hidden="true"/>
+      </hbox>
     </html:div>
   </html:fieldset>
 

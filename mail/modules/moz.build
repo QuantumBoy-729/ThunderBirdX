@@ -10,6 +10,7 @@ MOZ_SRC_FILES += [
     "MessageSaver.sys.mjs",
     "OverhaulUtils.sys.mjs",
     "QRExport.sys.mjs",
+    "ThunderBirdXUpdates.sys.mjs",
 ]
 
 EXTRA_JS_MODULES += [

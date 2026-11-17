@@ -50,4 +50,6 @@ skip-if = [
 ]
 support-files = ["files/avatar.png"]
 
+["browser_thunderbirdxUpdates.js"]
+
 ["browser_updateSettingsDisabled.js"]

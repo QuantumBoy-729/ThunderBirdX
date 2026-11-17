@@ -69,6 +69,8 @@ skip-if = [
 
 ["test_state_xulStoreSlice.js"]
 
+["test_thunderbirdxUpdates.js"]
+
 ["test_treeDataAdapter.js"]
 tags = ["dataadapter"]
 

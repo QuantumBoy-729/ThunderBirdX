@@ -41,6 +41,12 @@ Settings → Appearance → ThunderBirdX:
 - Quick reply under a message (opens a pre-filled reply to review before
   sending).
 
+### Updates
+
+- ThunderBirdX checks GitHub once a day for a new version and offers it in a
+  bar at the bottom of the window. Turn it off, or check by hand, in
+  Settings → Appearance → ThunderBirdX → Updates.
+
 ### Privacy
 
 - No Mozilla start page, in-app notifications, update checks or crash reports.
@@ -53,7 +59,8 @@ Settings → Appearance → ThunderBirdX:
 ### Known limitations
 
 - Not code signed: Windows and macOS warn on first launch.
-- No automatic updates.
+- Updates are offered, not installed: download the new version from its
+  release page.
 - The program file and its shortcuts on Windows still show the Thunderbird
   Daily icon.
 - macOS builds are for Apple silicon only.

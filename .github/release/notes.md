@@ -19,7 +19,9 @@ ThunderBirdX @VERSION@, a modern, free email app built on Thunderbird @BASE@.
   *More info → Run anyway*. On macOS, drag ThunderBirdX to Applications, then
   right-click it and choose *Open* the first time. If macOS says the app is
   damaged, run `xattr -cr /Applications/ThunderBirdX.app` in Terminal.
-- **No automatic updates yet.** Get new versions from the Releases page.
+- **Updates:** ThunderBirdX checks for new versions once a day and tells you
+  when one is out; you download and install it yourself. You can turn this off
+  in *Settings → Appearance → ThunderBirdX → Updates*.
 - **Already use Thunderbird?** ThunderBirdX starts with its own profile and
   leaves your Thunderbird setup alone. To bring your mail over, use
   *Tools → Import* in the app menu. See
