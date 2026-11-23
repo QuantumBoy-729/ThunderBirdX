@@ -4,6 +4,10 @@
 
 "use strict";
 
+const { startAxeMutationObserver } = ChromeUtils.importESModule(
+  "resource://testing-common/mail/AxeHelpers.sys.mjs"
+);
+
 const tabmail = document.getElementById("tabmail");
 let browser;
 let subview;
@@ -26,7 +30,17 @@ add_setup(async function () {
   manualConfigButton = subview.querySelector("#manualConfiguration");
   thundermailButton = subview.querySelector(".account-hub-thundermail-button");
 
-  registerCleanupFunction(() => {
+  await setAccountHubStepTitle(subview, "account-hub-email-setup-header");
+  await translateAccountHubStep(subview);
+
+  const axeWatcher = await startAxeMutationObserver(tab.browser, {
+    autoFinish: false,
+    message: "Account Hub should have no accessibility violations",
+    specialPowers: SpecialPowers,
+  });
+
+  registerCleanupFunction(async () => {
+    await axeWatcher.finish();
     tabmail.closeOtherTabs(tabmail.tabInfo[0]);
   });
 });
@@ -288,8 +302,13 @@ add_task(async function test_thundermailSignin() {
   const newForm =
     browser.contentWindow.document.createElement("email-auto-form");
   newForm.setAttribute("title-id", "account-hub-email-setup-header");
+  newForm.hidden = true;
 
+  // Use one form at a time to keep its IDs and access keys unique.
+  subview.remove();
   browser.contentWindow.document.body.appendChild(newForm);
+  await translateAccountHubStep(newForm);
+  newForm.hidden = false;
 
   const newThundermailHeader = newForm.querySelector(
     ".account-hub-thundermail-header"
@@ -329,4 +348,5 @@ add_task(async function test_thundermailSignin() {
   );
 
   newForm.remove();
+  browser.contentWindow.document.body.appendChild(subview);
 });

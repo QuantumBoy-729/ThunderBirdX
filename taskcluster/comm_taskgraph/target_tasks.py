@@ -16,6 +16,7 @@ from gecko_taskgraph.target_tasks import (
 )
 
 from comm_taskgraph.try_option_syntax import _try_cc_option_syntax
+from comm_taskgraph.util.shippable_repacks import filter_out_shippable_repacks
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +81,13 @@ def target_tasks_ash(full_task_graph, parameters, graph_config):
 @register_target_task("tb_rust_vendor_check")
 def target_tasks_tb_rust_vendor_check(full_task_graph, parameters, graph_config):
     """Select the set of tasks required to run tb-rust check-upstream & vendor."""
+    return ["repo-update-tb-rust-vendor"]
 
-    def _filter(task):
-        return task.kind in ["repo-update"]
 
-    return [l for l, t in full_task_graph.tasks.items() if _filter(t)]
+@register_target_task("third_party_updatebot")
+def target_tasks_third_party_updatebot(full_task_graph, parameters, graph_config):
+    """Select the task that updates out of date libraries in comm/third_party."""
+    return ["repo-update-third-party-updatebot"]
 
 
 @register_target_task("tb_rust_cargo_audit")
@@ -99,14 +102,21 @@ def target_tasks_tb_rust_cargo_audit(full_task_graph, parameters, graph_config):
 
 @register_target_task("enterprise_thunderbird_tasks")
 def target_tasks_enterprise_thunderbird(full_task_graph, parameters, graph_config):
-    return [l for l in target_tasks_enterprise_firefox(full_task_graph, parameters, graph_config)]
+    # TODO: Drop filter_out_shippable_repacks once the repacks come from the
+    # release promotion action.
+    return filter_out_shippable_repacks(
+        full_task_graph,
+        parameters,
+        target_tasks_enterprise_firefox(full_task_graph, parameters, graph_config),
+    )
 
 
 @register_target_task("enterprise_thunderbird_with_tests_tasks")
 def target_tasks_enterprise_thunderbird_with_tests(full_task_graph, parameters, graph_config):
-    return [
-        l
-        for l in target_tasks_enterprise_firefox_with_tests(
-            full_task_graph, parameters, graph_config
-        )
-    ]
+    # TODO: Drop filter_out_shippable_repacks once the repacks come from the
+    # release promotion action.
+    return filter_out_shippable_repacks(
+        full_task_graph,
+        parameters,
+        target_tasks_enterprise_firefox_with_tests(full_task_graph, parameters, graph_config),
+    )

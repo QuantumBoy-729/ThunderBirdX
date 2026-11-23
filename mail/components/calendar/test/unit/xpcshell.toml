@@ -22,7 +22,11 @@
 
 ["test_calendarEventEditSave.js"]
 
+["test_calendarEventGuests.js"]
+
 ["test_calendarEventSourceState.js"]
+
+["test_calendarEventVideoSave.js"]
 
 ["test_dialog_position.js"]
 

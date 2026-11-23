@@ -7,10 +7,6 @@
  * targeting the maildir issues of bug 856519.
  */
 
-/* import-globals-from ../../../test/resources/alertTestUtils.js */
-load("../../../resources/logHelper.js");
-load("../../../resources/alertTestUtils.js");
-
 var gMessages = ["bugmail10", "draft1"]; // message files used as a tests
 
 // Definition of tests

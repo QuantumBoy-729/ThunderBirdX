@@ -15,7 +15,7 @@ const AlertNotification = Components.Constructor(
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   LanguageDetector:
-    "resource://gre/modules/translations/LanguageDetector.sys.mjs",
+    "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs",
   MailNotificationService:
     "resource:///modules/MailNotificationService.sys.mjs",
   MailUtils: "resource:///modules/MailUtils.sys.mjs",
@@ -385,6 +385,8 @@ export const MailNotificationManager = new (class {
       }
 
       const title = this._getAlertTitle(folder, numNewMessages);
+      // The folder may be gone by the time _getAlertBody resolves.
+      const newestTime = this._getNewestMsgTime(folder, newMsgKeys);
       let body;
       try {
         body = await this._getAlertBody(folder, firstNewMsgHdr);
@@ -396,7 +398,7 @@ export const MailNotificationManager = new (class {
       }
 
       this._showAlert(firstNewMsgHdr, title, body, numNewMessages);
-      this._saveNotificationTime(folder, newMsgKeys);
+      this._folderNewestNotifiedTime.set(folder.URI, newestTime);
     } else {
       this._showCustomizedAlert(folder);
     }
@@ -656,14 +658,26 @@ export const MailNotificationManager = new (class {
    * @param {nsMsgKey[]} newMsgKeys - As returned by _getNewMsgKeysNotNotified.
    */
   _saveNotificationTime(folder, newMsgKeys) {
-    let newestNotifiedTime = 0;
-    for (const msgKey of newMsgKeys) {
+    this._folderNewestNotifiedTime.set(
+      folder.URI,
+      this._getNewestMsgTime(folder, newMsgKeys)
+    );
+  }
+
+  /**
+   * @param {nsIMsgFolder} folder
+   * @param {nsMsgKey[]} msgKeys
+   * @returns {integer} The date in seconds of the newest of the messages.
+   */
+  _getNewestMsgTime(folder, msgKeys) {
+    let newestTime = 0;
+    for (const msgKey of msgKeys) {
       const msgHdr = folder.msgDatabase.getMsgHdrForKey(msgKey);
       if (msgHdr) {
-        newestNotifiedTime = Math.max(newestNotifiedTime, msgHdr.dateInSeconds);
+        newestTime = Math.max(newestTime, msgHdr.dateInSeconds);
       }
     }
-    this._folderNewestNotifiedTime.set(folder.URI, newestNotifiedTime);
+    return newestTime;
   }
 
   async _updateUnreadCount() {

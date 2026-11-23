@@ -7,6 +7,8 @@ import {
   canMoveCalendarEvent,
   snapshotCalendar,
 } from "./calendar-event-calendar-options.mjs";
+import { descriptionFromSource } from "./calendar-event-description-format.mjs";
+import { getEventVideoUrl } from "./calendar-event-save-fields.mjs";
 
 const { cal } = ChromeUtils.importESModule(
   "resource:///modules/calendar/calUtils.sys.mjs"
@@ -32,6 +34,10 @@ const { cal } = ChromeUtils.importESModule(
  */
 
 /**
+ * @typedef {"default"|"busy"|"free"} CalendarEventAvailability
+ */
+
+/**
  * Serializable event fields for a dialog source session.
  *
  * @typedef {object} CalendarEventSourceEventSnapshot
@@ -41,8 +47,23 @@ const { cal } = ChromeUtils.importESModule(
  * @property {?CalendarEventDateTimeSnapshot} start - The start data.
  * @property {?CalendarEventDateTimeSnapshot} end - The end data.
  * @property {string} title - The event title.
+ * @property {CalendarEventAvailability} availability - The saved availability.
  * @property {string[]} categories - A copy of all selected names, including
  *   names absent from category preferences.
+ * @property {string} description - The Description document as HTML.
+ * @property {string} videoUrl - The URL of the video conference, or an empty
+ *   string. A CONFERENCE property without FEATURE=VIDEO gives an empty string.
+ * @property {CalendarEventGuestSnapshot[]} attendees - The event attendees.
+ * @property {?CalendarEventGuestSnapshot} organizer - The event organizer.
+ */
+
+/**
+ * Serializable guest data for an event snapshot.
+ *
+ * @typedef {object} CalendarEventGuestSnapshot
+ * @property {string} id - The guest ID.
+ * @property {?string} commonName - The guest's display name.
+ * @property {?string} participationStatus - The guest's response.
  */
 
 /**
@@ -112,6 +133,20 @@ function snapshotDateTime(dateTime) {
 }
 
 /**
+ * Copies guest values into a plain object.
+ *
+ * @param {calIAttendee} attendee - The attendee or organizer.
+ * @returns {CalendarEventGuestSnapshot} The copied guest values.
+ */
+function snapshotGuest(attendee) {
+  return {
+    id: attendee.id,
+    commonName: attendee.commonName,
+    participationStatus: attendee.participationStatus,
+  };
+}
+
+/**
  * Returns copied event values and calendar data for the dialog state.
  *
  * The returned `identity` holds the IDs used to find the saved event.
@@ -121,6 +156,9 @@ function snapshotDateTime(dateTime) {
  * Category names come from the event, not the available choices. Copying all
  * names preserves selections absent from preferences.
  *
+ * The video URL comes from a CONFERENCE property whose FEATURE lists VIDEO.
+ * Other conferences leave it empty.
+ *
  * @param {CalendarEventSourceIdentity} identity - The route used to load the
  *   event, including the occurrence ID if present.
  * @param {calIEvent} event - The loaded event or occurrence.
@@ -128,6 +166,23 @@ function snapshotDateTime(dateTime) {
  *   source permission checks at the time of loading.
  */
 function snapshotEvent(identity, event) {
+  const alternateDescription = event.getPropertyParameter(
+    "DESCRIPTION",
+    "ALTREP"
+  );
+  const prefix = "data:text/html,";
+  let descriptionHTML = "";
+
+  if (alternateDescription?.startsWith(prefix)) {
+    try {
+      descriptionHTML = decodeURIComponent(
+        alternateDescription.slice(prefix.length)
+      );
+    } catch {
+      // Use DESCRIPTION when the ALTREP value cannot be decoded.
+    }
+  }
+
   return {
     identity: { ...identity },
     calendar: snapshotCalendar(event.calendar),
@@ -142,9 +197,35 @@ function snapshotEvent(identity, event) {
       start: snapshotDateTime(event.startDate),
       end: snapshotDateTime(event.endDate),
       title: event.title,
+      availability: availabilityFromTransparency(event.getProperty("TRANSP")),
       categories: [...event.getCategories()],
+      description: descriptionFromSource(
+        descriptionHTML,
+        event.descriptionText ?? ""
+      ),
+      videoUrl: getEventVideoUrl(event),
+      attendees: event.getAttendees().map(snapshotGuest),
+      organizer: event.organizer ? snapshotGuest(event.organizer) : null,
     },
   };
+}
+
+/**
+ * Returns the Availability choice for an iCalendar `TRANSP` value.
+ *
+ * @param {?string} transparency - The saved transparency or a calendar default.
+ * @returns {CalendarEventAvailability} Default if the value is missing or
+ *   unsupported.
+ */
+export function availabilityFromTransparency(transparency) {
+  switch (String(transparency).toUpperCase()) {
+    case "OPAQUE":
+      return "busy";
+    case "TRANSPARENT":
+      return "free";
+    default:
+      return "default";
+  }
 }
 
 /**

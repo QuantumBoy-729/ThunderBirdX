@@ -27,6 +27,7 @@ let doc;
 let calendar;
 let otherCalendar;
 let transaction;
+let readDialog;
 
 add_setup(async function () {
   const initialView = window.gLastShownCalendarView.get();
@@ -79,6 +80,7 @@ add_setup(async function () {
   });
 
   registerCleanupFunction(async () => {
+    readDialog?.close();
     dialog.close();
     tabmail.closeTab(tab);
     CalendarTestUtils.removeCalendar(calendar);
@@ -117,6 +119,89 @@ async function edit(event, recurrenceId = null) {
 
   await doc.l10n.translateFragment(dialog);
 }
+
+add_task(async function test_editSavesAndReloadsAvailability() {
+  let saved = await createEvent({ calendar, name: "Availability round trip" });
+  const choices = [
+    { value: "busy", transparency: "OPAQUE" },
+    { value: "free", transparency: "TRANSPARENT" },
+    { value: "default", transparency: null },
+  ];
+  let previousChoice = "default";
+
+  for (const { value, transparency } of choices) {
+    await edit(saved);
+    const select = dialog.querySelector(".availability-selector");
+
+    Assert.equal(
+      select.value,
+      previousChoice,
+      "Editing should show the event's saved availability"
+    );
+
+    select.value = value;
+    select.dispatchEvent(
+      new browser.contentWindow.Event("change", { bubbles: true })
+    );
+
+    const result = await dialog.save();
+
+    Assert.equal(result.status, "success", "Save should update the event");
+
+    saved = await calendar.getItem(saved.id);
+
+    Assert.strictEqual(
+      saved.getProperty("TRANSP"),
+      transparency,
+      `The saved event should reflect the ${value} choice`
+    );
+
+    previousChoice = value;
+  }
+
+  await edit(saved);
+
+  Assert.equal(
+    dialog.querySelector(".availability-selector").value,
+    "default",
+    "Reopening an event saved as Default should show Default"
+  );
+
+  dialog.close();
+});
+
+add_task(async function test_titleEditPreservesNewerAvailability() {
+  const original = await createEvent({ calendar, name: "Before title edit" });
+  await edit(original);
+
+  const updated = original.clone();
+  updated.setProperty("TRANSP", "transparent");
+  await calendar.modifyItem(updated, original);
+
+  dialog.updateDraftSection("title", { title: "After title edit" });
+  const result = await dialog.save();
+
+  Assert.equal(result.status, "success", "Save should update the event title");
+
+  const saved = await calendar.getItem(original.id);
+
+  Assert.equal(saved.title, "After title edit", "Save should store the title");
+  Assert.equal(
+    saved.getProperty("TRANSP"),
+    "transparent",
+    "A title-only edit should preserve the newer availability"
+  );
+
+  await edit(saved);
+
+  Assert.equal(
+    dialog.querySelector(".availability-selector").value,
+    "free",
+    "Editing should recognize a lowercase availability value"
+  );
+
+  dialog.close();
+});
 
 add_task(async function test_storeUpdatesBeforeConnection() {
   const original = await createEvent({ calendar, name: "Before connection" });
@@ -490,6 +575,8 @@ add_task(async function test_keyboardSaveClearsStateAndUpdatesCalendar() {
   );
   const closeButton = dialog.querySelector(".close-button");
   const titleInput = dialog.querySelector(".event-title-input");
+  const videoRow = dialog.querySelector("calendar-event-video-row");
+  const guestsRow = dialog.querySelector("#guestsNavigationRow");
   const descriptionRow = dialog.querySelector("#descriptionNavigationRow");
   const availability = dialog.querySelector(".availability-selector");
   const categoryRow = dialog.querySelector(".calendar-event-category-row");
@@ -502,6 +589,7 @@ add_task(async function test_keyboardSaveClearsStateAndUpdatesCalendar() {
 
   Assert.ok(titleInput, "The dialog should have a title input.");
   Assert.ok(availability, "The footer should contain Availability.");
+  Assert.ok(guestsRow, "The dialog should have a Guests row.");
   Assert.ok(descriptionRow, "The dialog should have a Description row.");
   Assert.ok(
     descriptionRow.shadowRoot,
@@ -526,6 +614,8 @@ add_task(async function test_keyboardSaveClearsStateAndUpdatesCalendar() {
     [{}, moreButton, "Tab should reach More."],
     [{}, closeButton, "Tab should reach Close."],
     [{}, titleInput, "Tab should reach the title."],
+    [{}, videoRow, "Tab should reach Video."],
+    [{}, guestsRow, "Tab should reach Guests."],
     [{}, descriptionRow, "Tab should reach Description."],
     [{}, addCategory, "Tab should reach Add category."],
     [{}, availability, "Tab should reach Availability."],
@@ -545,6 +635,8 @@ add_task(async function test_keyboardSaveClearsStateAndUpdatesCalendar() {
       descriptionRow,
       "Shift+Tab should return to Description.",
     ],
+    [{ shiftKey: true }, guestsRow, "Shift+Tab should return to Guests."],
+    [{ shiftKey: true }, videoRow, "Shift+Tab should return to Video."],
     [{ shiftKey: true }, titleInput, "Shift+Tab should return to the title."],
     [{ shiftKey: true }, closeButton, "Shift+Tab should return to Close."],
     [{ shiftKey: true }, moreButton, "Shift+Tab should return to More."],
@@ -556,6 +648,8 @@ add_task(async function test_keyboardSaveClearsStateAndUpdatesCalendar() {
     [{}, moreButton, "Tab should reach More again."],
     [{}, closeButton, "Tab should reach Close again."],
     [{}, titleInput, "Tab should reach the title again."],
+    [{}, videoRow, "Tab should reach Video again."],
+    [{}, guestsRow, "Tab should reach Guests again."],
     [{}, descriptionRow, "Tab should reach Description again."],
     [{}, addCategory, "Tab should reach Add category again."],
     [{}, availability, "Tab should reach Availability again."],
@@ -1371,4 +1465,125 @@ add_task(async function test_nativeCloseRequestsKeepReturnValues() {
     "cancel",
     "An omitted result should preserve the prior return value."
   );
+});
+
+add_task(async function test_loadFormattedDescriptionBeforeShow() {
+  const event = await createEvent({
+    calendar,
+    descriptionHTML:
+      '<h2>Agenda</h2><p><em>First</em><span style="font-weight: bold">Bold</span><img src="bad"><a href="javascript:alert(1)">unsafe</a><a href="tel:+15551234">Call</a></p>',
+  });
+  const divergent = event.clone();
+  divergent.setProperty("DESCRIPTION", "Different plain fallback");
+  const stored = await calendar.modifyItem(divergent, event);
+
+  dialog.setCalendarEventRoute({ calendarId: calendar.id, eventId: stored.id });
+  const shown = await dialog.show();
+
+  Assert.ok(shown, "The stored event should open in edit mode.");
+  Assert.equal(
+    dialog.draft.description,
+    '<h2>Agenda</h2><p><em>First</em><span style="font-weight: bold">Bold</span><a>unsafe</a><a href="tel:+15551234">Call</a></p>',
+    "The ready draft should preserve inline formatting and safe links."
+  );
+  Assert.ok(
+    !dialog.isDirty,
+    "Loading the description should leave the draft clean."
+  );
+
+  const plain = await createEvent({
+    calendar,
+    description: "<b>literal</b>\nsecond line",
+  });
+  dialog.setCalendarEventRoute({ calendarId: calendar.id, eventId: plain.id });
+  const replaced = await dialog.show();
+  Assert.ok(replaced, "The plain event should open.");
+  Assert.equal(
+    dialog.draft.description,
+    "&lt;b&gt;literal&lt;/b&gt;<br>second line",
+    "A plain description should retain literal markup and line breaks."
+  );
+  dialog.close();
+});
+
+add_task(async function test_savedDescriptionInReadDialog() {
+  const event = await createEvent({ calendar, description: "Old description" });
+  await edit(event);
+
+  dialog.updateDraftSection("description", {
+    description:
+      '<div><b>Saved agenda</b></div><pre align="center">Notes</pre><ul><li align="right">Action</li></ul>',
+  });
+
+  const closed = BrowserTestUtils.waitForEvent(dialog, "close");
+  const result = await dialog.save();
+  Assert.equal(
+    result.status,
+    "success",
+    "Edit Save should write the description."
+  );
+  await closed;
+
+  const saved = await calendar.getItem(event.id);
+  Assert.ok(saved, "Save should keep the edited event in its calendar.");
+
+  window.openEventDialogForViewing(saved);
+  await waitForCalendarReady();
+
+  readDialog = document.querySelector('[is="calendar-dialog"]');
+  if (!readDialog.open) {
+    await BrowserTestUtils.waitForAttribute("open", readDialog);
+  }
+
+  const summary = readDialog.querySelector(
+    "#expandingDescription .plain-text-description"
+  );
+
+  Assert.ok(
+    ["Saved agenda", "Notes", "Action"].every(text =>
+      summary.textContent.includes(text)
+    ),
+    "Read should display the plain description fallback."
+  );
+
+  EventUtils.synthesizeMouseAtCenter(
+    readDialog.querySelector("#expandDescription"),
+    {},
+    window
+  );
+
+  const rich = readDialog.querySelector(
+    "#expandedDescription .rich-description"
+  );
+
+  await TestUtils.waitForCondition(
+    () =>
+      rich.contentDocument?.querySelector("b")?.textContent == "Saved agenda",
+    "The expanded Read dialog should display the saved bold text."
+  );
+
+  const readDoc = rich.contentDocument;
+  const notes = readDoc.querySelector("pre");
+  const action = readDoc.querySelector("li");
+
+  Assert.ok(notes, "Read should contain the saved preformatted block.");
+  Assert.ok(action, "Read should contain the saved list item.");
+  await TestUtils.waitForCondition(
+    () => notes.getBoundingClientRect().width > 0,
+    "Read should lay out the saved preformatted block."
+  );
+  Assert.equal(
+    readDoc.defaultView.getComputedStyle(notes).textAlign,
+    "center",
+    "Read should center the saved preformatted text."
+  );
+  Assert.equal(
+    readDoc.defaultView.getComputedStyle(action).textAlign,
+    "right",
+    "Read should right-align the saved list item."
+  );
+
+  readDialog.close();
+  readDialog = null;
+  await calendar.deleteItem(saved);
 });

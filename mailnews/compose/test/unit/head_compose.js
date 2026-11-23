@@ -1,3 +1,6 @@
+var { MailShutdown } = ChromeUtils.importESModule(
+  "resource://testing-common/mailnews/MailShutdown.sys.mjs"
+);
 var { MailServices } = ChromeUtils.importESModule(
   "resource:///modules/MailServices.sys.mjs"
 );
@@ -26,8 +29,10 @@ var gDEPTH = "../../../../";
 
 // Import the required setup scripts.
 
-/* import-globals-from ../../../test/resources/abSetup.js */
-load("../../../resources/abSetup.js");
+var { kCABData, kNormalPropertiesURI, kPABData, loadABFile } =
+  ChromeUtils.importESModule(
+    "resource://testing-common/mailnews/AddrBookTestUtils.sys.mjs"
+  );
 
 // Import the smtp server scripts
 var { nsMailServer } = ChromeUtils.importESModule(
@@ -268,5 +273,5 @@ function getMessageBody(content) {
 }
 
 registerCleanupFunction(function () {
-  load(gDEPTH + "mailnews/resources/mailShutdown.js");
+  MailShutdown.simulate();
 });

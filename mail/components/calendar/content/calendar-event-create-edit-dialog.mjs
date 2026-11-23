@@ -10,7 +10,13 @@ import { CalendarEventDialogSourceMixin } from "./calendar-event-dialog-source-m
 import { store } from "moz-src:///comm/mail/base/content/state/store.mjs";
 import { saveCalendarEventEdit } from "./calendar-event-edit-save.mjs";
 import { saveCalendarEventCreate } from "./calendar-event-create-save.mjs";
-import { calendarEventCategorySaveField } from "./calendar-event-save-fields.mjs";
+import { descriptionToPlainText } from "./calendar-event-description-format.mjs";
+import {
+  calendarEventAvailabilitySaveField,
+  calendarEventCategorySaveField,
+  calendarEventVideoSaveField,
+} from "./calendar-event-save-fields.mjs";
+import { availabilityFromTransparency } from "./calendar-event-source-loader.mjs";
 import {
   loadCalendarOptions,
   observeCalendarOptions,
@@ -18,6 +24,7 @@ import {
 } from "./calendar-event-calendar-options.mjs";
 import {
   clearCalendarEventDraft,
+  createInitialCalendarEventDraft,
   initializeFields,
   resetForCreate,
   resetFromSource,
@@ -47,20 +54,24 @@ import {
   selectTitleViewModel,
   selectCalendarValidity,
   selectCanSave,
+  selectDescriptionDocument,
 } from "./state/calendar-event-create-edit-selectors.mjs";
 import "./calendar-dialog-navigation-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
 import "./calendar-dialog-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
 import "./calendar-dialog-subview-manager.mjs"; // eslint-disable-line import-x/no-unassigned-import
 import "./calendar-dialog-toggleable-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
-import "./calendar-dialog-subview.mjs"; // eslint-disable-line import-x/no-unassigned-import
+import "./calendar-event-description-subview.mjs"; // eslint-disable-line import-x/no-unassigned-import
 import "./calendar-event-category-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
+import "./calendar-event-video-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
+import "./calendar-event-guests-row.mjs"; // eslint-disable-line import-x/no-unassigned-import
 
 const { cal } = ChromeUtils.importESModule(
   "resource:///modules/calendar/calUtils.sys.mjs"
 );
 
 /**
- * Displays editable event values, calendar choices, and category controls.
+ * Displays editable event values, calendar choices, category controls, and
+ * Video controls.
  *
  * Keeps unsaved values (the draft) in the document's Redux store under a fixed
  * session key. Public getters return copies so callers cannot change the draft.
@@ -99,6 +110,20 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
    * @type {HTMLElement}
    */
   #subviewManager;
+
+  /**
+   * Resolves when the first pending control translations finish.
+   *
+   * @type {?Promise<Event>}
+   */
+  #initialLocalization = null;
+
+  /**
+   * Checks whether the route that enabled subview navigation is still current.
+   *
+   * @type {?function(): boolean}
+   */
+  #isNavigationCurrent = null;
 
   /**
    * The latest "create" or "edit" mode and work state for this dialog.
@@ -221,7 +246,7 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
   /**
    * Maps each field section to the helper that checks and copies its values.
    * Each helper lists draft properties in `keys` and copies them to an event
-   * with `apply`. Categories are registered here; other fields add their helpers.
+   * with `apply`. This dialog registers Availability, Categories, and Video.
    *
    * Create Save uses helpers for all fields, including title and dates. Helpers
    * can supply `validate` to check input and display errors. Edit Save uses
@@ -231,7 +256,11 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
    *
    * @type {Record<string, CalendarEventSaveField>}
    */
-  saveFields = { categories: calendarEventCategorySaveField };
+  saveFields = {
+    availability: calendarEventAvailabilitySaveField,
+    categories: calendarEventCategorySaveField,
+    video: calendarEventVideoSaveField,
+  };
 
   /**
    * The margin maintained between this dialog and the visible calendar view.
@@ -279,6 +308,8 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
           ),
         draftState: state =>
           selectCalendarEventDraftState(state, this.calendarEventSessionKey),
+        descriptionDocument: state =>
+          selectDescriptionDocument(state, this.calendarEventSessionKey),
         titleViewModel: state =>
           selectTitleViewModel(state, this.calendarEventSessionKey),
         calendarControl: state =>
@@ -297,14 +328,27 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
   }
 
   /**
-   * Starts create mode with no selected categories.
-   * Field code adds other defaults.
+   * Starts create mode with the initial draft values. Sets availability from
+   * the timed-event preference.
+   *
+   * @param {CalendarEventDialogRouteRequest} route - The current create route.
    */
-  #initializeDraft() {
+  #initializeDraft(route) {
+    const transparency = cal.item.getEventDefaultTransparency(false);
+
     this.dispatch(
       startCreateSession({ sessionKey: this.calendarEventSessionKey })
     );
-    this.resetCreateDraft({ categories: [] });
+
+    // A store observer can replace the route while create mode starts.
+    if (!route.isCurrent()) {
+      return;
+    }
+
+    this.resetCreateDraft({
+      ...createInitialCalendarEventDraft(),
+      availability: availabilityFromTransparency(transparency),
+    });
   }
 
   /**
@@ -319,6 +363,14 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       );
       this.append(template.content.cloneNode(true));
       this.#categoryRow.bindEventSession(this.calendarEventSessionKey);
+      this.querySelector("calendar-event-video-row").bindEventSession(
+        this.calendarEventSessionKey
+      );
+      this.querySelector("calendar-event-description-subview").bindEventSession(
+        this.calendarEventSessionKey
+      );
+
+      this.#guestsRow.bindEventSession(this.calendarEventSessionKey);
       this.#calendarSelect = this.querySelector(".calendar-selector");
       this.#availabilitySelect = this.querySelector(".availability-selector");
       this.addEventListener("cancel", this);
@@ -342,6 +394,15 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
 
       window.MozXULElement?.insertFTLIfNeeded("messenger/calendarDialog.ftl");
       document.l10n.setAttributes(this, "calendar-event-create-edit-dialog");
+
+      // Wait for Fluent to name the controls before first showing the dialog.
+      if (document.hasPendingL10nMutations) {
+        this.#initialLocalization = new Promise(resolve =>
+          document.addEventListener("L10nMutationsFinished", resolve, {
+            once: true,
+          })
+        );
+      }
     }
 
     this.addEventListener("calendar-dialog-open-subview", this);
@@ -464,35 +525,42 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
   }
 
   /**
-   * Updates title validity for empty text, or when the user has edited a
-   * 'too long' title and it's still too long. `input.validity.tooLong` remains
-   * false when `input.value` is loaded. This correctly keeps an unchanged
-   * loaded title over 180 characters valid.
+   * Returns title validity from the text and the input's native length check.
+   * A loaded title can exceed 180 characters until the user edits it.
+   *
+   * @param {string} value - The title text.
+   * @param {boolean} isTooLong - The title input's native length result.
+   * @returns {CalendarEventDraftSectionValidity} The title validation result.
+   */
+  #getTitleValidity(value, isTooLong) {
+    if (!value.trim()) {
+      return {
+        valid: false,
+        messageId: "calendar-event-title-required",
+      };
+    }
+
+    if (isTooLong) {
+      return {
+        valid: false,
+        messageId: "calendar-event-title-too-long",
+      };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Stores the title input's validation result.
    *
    * @param {HTMLInputElement} input - The title input.
    */
   #setTitleValidity(input) {
-    let validity;
-
-    if (!input.value.trim()) {
-      validity = {
-        valid: false,
-        messageId: "calendar-event-title-required",
-      };
-    } else if (input.validity.tooLong) {
-      validity = {
-        valid: false,
-        messageId: "calendar-event-title-too-long",
-      };
-    } else {
-      validity = { valid: true };
-    }
-
     this.dispatch(
       setSectionValidity({
         section: "title",
         sessionKey: this.calendarEventSessionKey,
-        validity,
+        validity: this.#getTitleValidity(input.value, input.validity.tooLong),
       })
     );
   }
@@ -528,29 +596,53 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
   }
 
   /**
-   * Shows the subview requested by `row`. Focuses the shown subview.
+   * Opens the requested subview and moves focus to it.
    *
    * @param {HTMLElement} row - The navigation row that requested the subview.
    */
   #openSubview(row) {
+    // The dialog can switch events while it is open. Ignore navigation until
+    // the current event draft is ready.
+    if (!this.#isNavigationCurrent?.()) {
+      return;
+    }
+
     const subviewId = row.getAttribute("subview-id");
+
     this.#subviewManager.showSubview(subviewId);
     this.#subviewManager.querySelector(`[id="${subviewId}"]`).focus();
   }
 
   /**
-   * Shows the main subview. Focuses the navigation row corresponding to the
-   * subview that was just closed.
+   * Shows the main subview and focuses the row that opened the subview.
    *
    * @param {HTMLElement} subview - The subview that requested to close.
    */
   #closeSubview(subview) {
-    const correspondingNavigationRow = this.querySelector(
-      `calendar-dialog-navigation-row[subview-id="${subview.id}"]`
-    );
+    const row = this.querySelector(`[subview-id="${subview.id}"]`);
 
     this.#subviewManager.showDefaultSubview();
-    correspondingNavigationRow?.focusRowAction();
+    row?.focusRowAction();
+  }
+
+  /**
+   * Returns to the main view when the route clears. Moves focus to the
+   * dialog if the active subview closes.
+   */
+  #resetSubviewNavigation() {
+    if (!this.#isNavigationCurrent) {
+      return;
+    }
+
+    const shouldRestoreFocus =
+      this.open && !this.#subviewManager.isDefaultSubviewVisible();
+
+    this.#isNavigationCurrent = null;
+    this.#subviewManager.showDefaultSubview();
+
+    if (shouldRestoreFocus) {
+      this.focus();
+    }
   }
 
   /**
@@ -753,6 +845,8 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       this.#draftState = newValue;
       this.#updateDraftViewModel();
       this.#renderSave();
+    } else if (fieldName == "descriptionDocument") {
+      this.#renderDescriptionPreview(newValue);
     } else if (fieldName == "sourceSession") {
       this.#sourceSession = newValue;
     } else if (fieldName == "calendarControl") {
@@ -766,6 +860,36 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     } else if (fieldName == "titleViewModel") {
       this.#renderTitle(newValue);
     }
+  }
+
+  /**
+   * Shows a plain-text preview of the current Description in the main view.
+   *
+   * @param {?string} description - The draft HTML, or null before a draft exists.
+   */
+  #renderDescriptionPreview(description) {
+    const row = this.querySelector("#descriptionNavigationRow");
+
+    if (!row) {
+      return;
+    }
+
+    const preview = row.querySelector(".calendar-event-description-preview");
+    const text = description ? descriptionToPlainText(description).trim() : "";
+    const slot = text ? "content" : "";
+
+    preview.textContent = text;
+
+    if (preview.slot == slot) {
+      return;
+    }
+
+    const labelId = text
+      ? "calendar-dialog-description-label"
+      : "calendar-event-add-description";
+
+    preview.slot = slot;
+    document.l10n.setAttributes(row.querySelector('[slot="label"]'), labelId);
   }
 
   /**
@@ -837,7 +961,9 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     });
   }
 
-  /** Removes saved route IDs without starting another route load. */
+  /**
+   * Removes saved route IDs without starting another route load.
+   */
   #clearSavedRouteAttributes() {
     // Closing already cleared the session. Remove the saved route IDs
     // without starting a new route load from each attribute callback.
@@ -896,7 +1022,9 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     super.attributeChangedCallback(attribute, oldValue, newValue);
   }
 
-  /** Discards the draft and closes the dialog unless Save is pending. */
+  /**
+   * Discards the draft and closes the dialog unless Save is pending.
+   */
   close() {
     if (this.#createEditSession?.operation.status != "pending") {
       super.close();
@@ -954,10 +1082,24 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
         });
       };
 
+      // Read the title length result before Save notifies store listeners.
+      const isTitleTooLong =
+        this.querySelector(".event-title-input").validity.tooLong;
+
       return saveCalendarEventCreate({
         store,
         sessionKey: this.calendarEventSessionKey,
-        fields: this.saveFields,
+        fields: {
+          title: {
+            keys: ["title"],
+            validate: ({ title = "" }) =>
+              this.#getTitleValidity(title, isTitleTooLong),
+            apply: (event, { title }) => {
+              event.title = title;
+            },
+          },
+          ...this.saveFields,
+        },
         transact,
       });
     }
@@ -980,7 +1122,9 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     });
   }
 
-  /** Displays observed Save progress and failures for keyboard and speech users. */
+  /**
+   * Displays observed Save progress and failures for keyboard and speech users.
+   */
   #renderSave() {
     const body = this.querySelector(".calendar-event-create-edit-dialog-body");
 
@@ -1081,16 +1225,17 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     }
   }
 
+  /**
+   * Returns the dialog's category row.
+   *
+   * @returns {?CalendarEventCategoryRow} The category row, or null when absent.
+   */
   get #categoryRow() {
     return this.querySelector("calendar-event-category-row");
   }
 
-  /**
-   * Arranges translated category chips before the dialog measures itself.
-   */
-  prepareLayout() {
-    // A resize can be reported while the category row is temporarily removed.
-    this.#categoryRow?.prepareLayout();
+  get #guestsRow() {
+    return this.querySelector("calendar-event-guests-row");
   }
 
   /**
@@ -1225,10 +1370,20 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     }
   }
 
+  /**
+   * Returns the button for the event actions menu.
+   *
+   * @returns {?HTMLButtonElement} The menu button, or null when absent.
+   */
   get #menuButton() {
     return this.querySelector("#calendarEventCreateEditDialogMenuButton");
   }
 
+  /**
+   * Returns the event actions popup.
+   *
+   * @returns {?XULPopupElement} The actions popup, or null when absent.
+   */
   get #menu() {
     return this.querySelector("#calendarEventCreateEditDialogMenu");
   }
@@ -1238,6 +1393,9 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       this.#requestDeleteEvent(),
   };
 
+  /**
+   * Opens the event actions menu anchored to its button.
+   */
   #openMenu() {
     this.#menu.openPopup(this.#menuButton, "after_end");
   }
@@ -1281,8 +1439,6 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       ? calendarDisplayBox
       : fallbackContainer;
 
-    this.#subviewManager.showDefaultSubview();
-
     const wasOpen = this.open;
     const shown = await super.show(event);
 
@@ -1297,11 +1453,11 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
   }
 
   /**
-   * Starts create mode, waits for the category row, and adds the calendar default.
+   * Starts create mode, waits for localized controls, and adds the calendar default.
    *
    * @param {CalendarEventDialogRouteRequest} route - The route number and a
    *   check that this request still belongs to the dialog.
-   * @returns {Promise<void>} Resolves after translating category controls and
+   * @returns {Promise<void>} Resolves after the controls are translated and
    *   applying an available calendar default, or after an old route stops
    *   without applying its remaining results. Loading or translation errors
    *   reject it.
@@ -1312,11 +1468,14 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       return;
     }
 
-    this.#initializeDraft();
+    this.#initializeDraft(route);
     this.#renderSave();
 
-    // Wait for translated controls before opening and measuring the dialog.
-    await this.#categoryRow.renderComplete;
+    // Wait for localized controls before opening and measuring the dialog.
+    await Promise.all([
+      this.#categoryRow.renderComplete,
+      this.#initialLocalization,
+    ]);
 
     // Apply the queued choice refresh before choosing this route's default.
     await Promise.resolve();
@@ -1325,6 +1484,8 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     if (!route.isCurrent()) {
       return;
     }
+
+    this.#isNavigationCurrent = route.isCurrent;
 
     const calendars = this.selectValue("calendarChoices");
     const windowDefault = cal.view.getCompositeCalendar(window).defaultCalendar;
@@ -1358,7 +1519,11 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     this.dispatch(
       initializeFields({
         sessionKey: this.calendarEventSessionKey,
-        defaults: { calendarId: calendar.id },
+        defaults: {
+          calendarId: calendar.id,
+          enabledRows: { video: false },
+          videoUrl: "",
+        },
       })
     );
   }
@@ -1378,7 +1543,7 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
 
   /**
    * Copies the saved event into a draft.
-   * Waits for category controls and dialog text before enabling edit Save.
+   * Waits for category controls, guest summary, and dialog text before enabling Save.
    *
    * @param {CalendarEventDialogSource} source - The loaded source data and a
    *   check that the source still belongs to the current route.
@@ -1412,8 +1577,11 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
       })
     );
 
-    // Wait for choices to render even when the event has no selected names.
-    await this.#categoryRow.renderComplete;
+    await Promise.all([
+      this.#categoryRow.renderComplete,
+      this.#guestsRow.renderComplete,
+      this.#initialLocalization,
+    ]);
 
     // If the route changed during translation, leave the new route alone.
     if (!isCurrent()) {
@@ -1423,8 +1591,8 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
     // Localize the dialog before enabling Save.
     await document.l10n.translateFragment(this);
 
-    // Only enable Save if this route is still current after localization.
     if (isCurrent()) {
+      this.#isNavigationCurrent = isCurrent;
       this.#editReady = true;
       this.#renderSave();
     }
@@ -1436,6 +1604,7 @@ export class CalendarEventCreateEditDialog extends CalendarEventDialogSourceMixi
    * session key stays fixed so the next route uses the same dialog entries.
    */
   onCalendarEventRouteCleared() {
+    this.#resetSubviewNavigation();
     this.#editReady = false;
 
     this.dispatch(

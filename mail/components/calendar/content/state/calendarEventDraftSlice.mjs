@@ -30,13 +30,18 @@ import { rootReducer } from "moz-src:///comm/mail/base/content/state/store.mjs";
  * @typedef {object} CalendarEventDraft
  * @property {string} [calendarId] - The selected calendar ID.
  * @property {Record<string, boolean>} [enabledRows] - Optional row enabled state.
- * @property {"default"|"busy"|"free"} [availability] - Unsaved availability.
+ * @property {string} [videoUrl] - The video URL entered in the Video row or
+ *   loaded from the event.
+ * @property {CalendarEventAvailability} [availability] - Unsaved availability.
  * @property {string} [title] - The event title.
+ * @property {string} [description] - The Description document as HTML.
  * @property {string[]} [categories] - Selected category names in draft order.
  *   Names need not appear in category preferences.
  *   Category order does not count as a change.
  * @property {?CalendarEventDateTimeSnapshot} [start] - The start date and time.
  * @property {?CalendarEventDateTimeSnapshot} [end] - The end date and time.
+ * @property {CalendarEventGuestSnapshot[]} [attendees] - The event attendees.
+ * @property {?CalendarEventGuestSnapshot} [organizer] - The event organizer.
  */
 
 /**
@@ -102,19 +107,52 @@ function valuesAreEqual(first, second) {
 }
 
 /**
+ * Returns the starting field values for a new event.
+ *
+ * @returns {CalendarEventDraft} The initial create draft.
+ */
+export function createInitialCalendarEventDraft() {
+  return { categories: [], description: "" };
+}
+
+/**
  * Returns a copy of the loaded event values that the dialog can edit.
  * The source session keeps the event and occurrence IDs. The draft has its own
  * calendar ID so a selection can change the destination without changing the
  * identity of the saved event. Copies category names, or uses an empty array
- * if the source has none.
+ * if the source has none. Copies the video URL, and turns Video on only when
+ * the source has one.
  *
  * @param {CalendarEventSourceSnapshot} snapshot - The loaded source data.
  * @returns {CalendarEventDraft} A separate copy of the editable values.
  */
 export function cloneDraftFromSourceSnapshot(snapshot) {
-  const { calendarId, categories = [], end, start, title } = snapshot.event;
+  const {
+    attendees = [],
+    availability,
+    calendarId,
+    categories = [],
+    description,
+    end,
+    organizer = null,
+    start,
+    title,
+    videoUrl = "",
+  } = snapshot.event;
 
-  return structuredClone({ calendarId, categories, end, start, title });
+  return structuredClone({
+    attendees,
+    availability,
+    calendarId,
+    categories,
+    ...(description !== undefined && { description }),
+    end,
+    organizer,
+    start,
+    title,
+    videoUrl,
+    enabledRows: { video: videoUrl != "" },
+  });
 }
 
 /**

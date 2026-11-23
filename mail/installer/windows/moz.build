@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-if CONFIG["MAKENSISU"] and not CONFIG["MOZ_USE_MAKEFILE_INSTALLER_BUILD"]:
+if CONFIG["MAKENSISU"]:
     FINAL_TARGET = "dist/bin"
 
     nsis_config_dir = f"{OBJDIR}/instgen"
@@ -26,15 +26,24 @@ if CONFIG["MAKENSISU"] and not CONFIG["MOZ_USE_MAKEFILE_INSTALLER_BUILD"]:
     nsis_locale_files = [
         f"/comm/mail/locales/en-US/installer/{f}"
         for f in [
-            "custom.properties",
-            "mui.properties",
-            "override.properties",
+            "custom.ftl",
+            "mui.ftl",
+            "override.ftl",
         ]
     ]
 
     nsis_preprocess_locale = (
         "/toolkit/mozapps/installer/windows/nsis/preprocess-locale.py"
     )
+
+    ab_cd = CONFIG["MOZ_UI_LOCALE"]
+    en_us_installer_dir = f"{TOPSRCDIR}/comm/mail/locales/en-US/installer"
+    nsis_locale_args = [f"--locale-arg={en_us_installer_dir}"]
+    if ab_cd != "en-US":
+        nsis_locale_args = [
+            f"--locale-arg=--l10n-dir={CONFIG['L10NBASEDIR']}/{ab_cd}/mail/installer",
+            f"--locale-arg=--l10n-dir={en_us_installer_dir}",
+        ]
 
     GeneratedFile(
         "nsis-stage.stamp",
@@ -44,14 +53,13 @@ if CONFIG["MAKENSISU"] and not CONFIG["MOZ_USE_MAKEFILE_INSTALLER_BUILD"]:
         extra_deps=nsis_srcdir_files
         + nsis_topsrcdir_files
         + nsis_locale_files
-        + [
-            nsis_preprocess_locale,
-            "!/buildid.h",
-        ],
+        + [nsis_preprocess_locale],
         flags=[
             f"--config-dir={nsis_config_dir}",
             f"--spec-out={OBJDIR}/nsis-stage.json",
+            # Localized repacks stage their locale through `l10n_repackage`.
             "--repack-l10n-dir=mail/installer",
+            f"--repack-locale-arg={en_us_installer_dir}",
         ]
         + [f"--install={SRCDIR}/{f}" for f in CONFIG["NSIS_INSTALLER_FILES"]]
         + [f"--install={TOPSRCDIR}{f}" for f in nsis_topsrcdir_files]
@@ -60,12 +68,13 @@ if CONFIG["MAKENSISU"] and not CONFIG["MOZ_USE_MAKEFILE_INSTALLER_BUILD"]:
             f"--defines-out={nsis_config_dir}/defines.nsi",
             f"--topsrcdir={TOPSRCDIR}",
             f"--preprocess-locale-script={TOPSRCDIR}{nsis_preprocess_locale}",
-            # Localized repacks stage their locale through `l10n_repackage`.
-            f"--locale-arg={TOPSRCDIR}/comm/mail/locales/en-US/installer",
-            "--ab-cd=en-US",
+        ]
+        + nsis_locale_args
+        + [
+            f"--ab-cd={ab_cd}",
             "--preprocess-locale",
             f"--defines-string={CONFIG['NSIS_INSTALLER_DEFINES']}",
-            "-DAB_CD=en-US",
+            f"-DAB_CD={ab_cd}",
             f"-DTOPOBJDIR={TOPOBJDIR}",
         ],
     )

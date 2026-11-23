@@ -154,7 +154,7 @@ add_setup(async function () {
     },
   };
 
-  dialog.saveFields = fields;
+  Object.assign(dialog.saveFields, fields);
 
   await startAxeMutationObserver(browser, {
     container: '[is="calendar-event-create-edit-dialog"]',
@@ -182,26 +182,9 @@ async function create(patch = {}) {
 
   Assert.ok(await dialog.show(), "The create dialog should open.");
 
-  const start = cal.dtz.now();
-
-  start.hour = 13;
-  start.minute = start.second = 0;
-
-  const end = start.clone();
-
-  end.addDuration(cal.createDuration("PT1H"));
-
-  const snapshot = date => ({
-    icalString: date.icalString,
-    timezoneId: date.timezone.tzid,
-    isDate: date.isDate,
-  });
-
-  dialog.resetCreateDraft({
-    calendarId: calendar.id,
+  resetCalendarEventCreateDraft(dialog, calendar, {
+    availability: dialog.draft.availability,
     title: "New event",
-    start: snapshot(start),
-    end: snapshot(end),
     enabledRows: { location: true },
     location: "Retained room",
     ...patch,
@@ -216,6 +199,65 @@ async function create(patch = {}) {
 
   await doc.l10n.translateFragment(dialog);
 }
+
+add_task(async function test_createSavesAvailability() {
+  const cases = [
+    { prefersFree: false, initial: "busy", expected: "OPAQUE" },
+    { prefersFree: true, initial: "free", expected: "TRANSPARENT" },
+    { prefersFree: true, initial: "free", choice: "default", expected: null },
+  ];
+
+  for (const { prefersFree, initial, choice, expected } of cases) {
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        [
+          "calendar.events.defaultTransparency.standard.transparent",
+          prefersFree,
+        ],
+      ],
+    });
+
+    const title = `Created with ${choice ?? initial} availability`;
+    await create({ title });
+
+    const select = dialog.querySelector(".availability-selector");
+
+    Assert.equal(
+      select.value,
+      initial,
+      "The new event should show the timed event preference"
+    );
+
+    if (choice) {
+      select.value = choice;
+      select.dispatchEvent(
+        new browser.contentWindow.Event("change", { bubbles: true })
+      );
+    }
+
+    const result = await dialog.save();
+
+    Assert.equal(result.status, "success", "Save should create the event");
+
+    const events = await calendar.getItemsAsArray(
+      Ci.calICalendar.ITEM_FILTER_TYPE_EVENT,
+      0,
+      null,
+      null
+    );
+
+    const saved = events.find(event => event.title === title);
+
+    Assert.ok(saved, "The calendar should contain the saved event");
+    Assert.strictEqual(
+      saved.getProperty("TRANSP"),
+      expected,
+      `The saved event should reflect the ${choice ?? initial} choice`
+    );
+
+    await SpecialPowers.popPrefEnv();
+  }
+});
 
 /**
  * Saves the current field helpers and write function for later restoration.
@@ -241,7 +283,7 @@ function preserveSaveHandlers() {
   return restore;
 }
 
-add_task(async function test_saveWithoutFixedFieldHelpers() {
+add_task(async function test_saveWithoutSuppliedFieldHelpers() {
   const restoreSaveHandlers = preserveSaveHandlers();
 
   dialog.saveFields = {};
@@ -259,9 +301,12 @@ add_task(async function test_saveWithoutFixedFieldHelpers() {
   Assert.ok(button, "The dialog should contain the Save button.");
   Assert.ok(
     BrowserTestUtils.isVisible(button),
-    "Save should remain visible without fixed helpers."
+    "Save should remain visible without supplied helpers."
   );
-  Assert.ok(!button.disabled, "Save should be enabled without fixed helpers.");
+  Assert.ok(
+    !button.disabled,
+    "Save should be enabled without supplied helpers."
+  );
 
   const closed = BrowserTestUtils.waitForEvent(dialog, "close");
 
@@ -293,7 +338,7 @@ add_task(async function test_partialFieldValidationIgnoresAbsentErrors() {
     "setSectionValidity",
     {
       sessionKey: dialog.calendarEventSessionKey,
-      section: "title",
+      section: "description",
       validity: { valid: false },
     }
   );
@@ -969,26 +1014,8 @@ add_task(async function test_productionSaveAddsRenderedCalendarEvent() {
     dateTime: fields.dateTime,
   };
 
-  const start = cal.dtz.now();
-
-  start.hour = 13;
-  start.minute = start.second = 0;
-
-  const end = start.clone();
-
-  end.addDuration(cal.createDuration("PT1H"));
-
-  const snapshot = date => ({
-    icalString: date.icalString,
-    timezoneId: date.timezone.tzid,
-    isDate: date.isDate,
-  });
-
-  productDialog.resetCreateDraft({
-    calendarId: calendar.id,
+  resetCalendarEventCreateDraft(productDialog, calendar, {
     title: "Created in Calendar",
-    start: snapshot(start),
-    end: snapshot(end),
   });
 
   const view = document.getElementById("week-view");

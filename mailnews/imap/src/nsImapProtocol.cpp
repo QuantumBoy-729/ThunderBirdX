@@ -85,6 +85,7 @@
 // TLS alerts
 #include "NSSErrorsService.h"
 
+#include "mozilla/Base64.h"
 #include "mozilla/Components.h"
 #include "mozilla/SyncRunnable.h"
 #include "mozilla/intl/LocaleService.h"
@@ -287,8 +288,8 @@ NS_IMETHODIMP nsMsgImapLineDownloadCache::GetMsgHdrs(nsACString& aMsgHdrs) {
 
 // The following macros actually implement addref, release and query interface
 // for our component.
-NS_IMPL_ADDREF_INHERITED(nsImapProtocol, nsMsgProtocol)
-NS_IMPL_RELEASE_INHERITED(nsImapProtocol, nsMsgProtocol)
+NS_IMPL_ADDREF(nsImapProtocol)
+NS_IMPL_RELEASE(nsImapProtocol)
 
 NS_INTERFACE_MAP_BEGIN(nsImapProtocol)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIImapProtocol)
@@ -509,8 +510,7 @@ class nsImapProtocolMainLoopRunnable final : public mozilla::Runnable {
 };
 
 nsImapProtocol::nsImapProtocol()
-    : nsMsgProtocol(nullptr),
-      m_urlReadyToRunMonitor("imapUrlReadyToRun"),
+    : m_urlReadyToRunMonitor("imapUrlReadyToRun"),
       m_pseudoInterruptMonitor("imapPseudoInterrupt"),
       m_dataMemberMonitor("imapDataMember"),
       m_threadDeathMonitor("imapThreadDeath"),
@@ -914,11 +914,7 @@ nsresult nsImapProtocol::SetupWithUrl(nsIURI* aURL, nsISupports* aConsumer) {
     m_canonicalTrashFolderPath.Truncate();
     nsAutoCString trashFolderPath;
     if (NS_SUCCEEDED(imapServer->GetTrashFolderName(trashFolderPath))) {
-      if (m_allowUTF8Accept)
-        m_trashFolderPath = trashFolderPath;
-      else
-        CopyUTF16toMUTF7(NS_ConvertUTF8toUTF16(trashFolderPath),
-                         m_trashFolderPath);
+      m_trashFolderPathUtf8 = trashFolderPath;
     }
 
     bool preferPlainText =
@@ -1023,9 +1019,8 @@ nsresult nsImapProtocol::SetupWithUrlCallback(nsIProxyInfo* aProxyInfo) {
   // remember so we can know whether we can issue a start tls or not...
   m_connectionType = connectionType;
   if (m_transport && m_mockChannel) {
-    uint8_t qos;
-    rv = GetQoSBits(&qos);
-    if (NS_SUCCEEDED(rv)) m_transport->SetQoSBits(qos);
+    m_transport->SetQoSBits(static_cast<uint8_t>(
+        std::clamp(Preferences::GetInt("mail.imap.qos"), 0, 0xff)));
 
     // Ensure that the socket can get the notification callbacks
     SetSecurityCallbacksFromChannel(m_transport, m_mockChannel);
@@ -1111,9 +1106,9 @@ void nsImapProtocol::ReleaseUrlState(bool rerunning) {
           nullptr;  // force us to release our last reference on the url
       m_urlInProgress = false;
     }
+    // Need to null this out whether we have an m_runningUrl or not
+    m_imapMailFolderSink = nullptr;
   }
-  // Need to null this out whether we have an m_runningUrl or not
-  m_imapMailFolderSink = nullptr;
 
   // we want to make sure the imap protocol's last reference to the url gets
   // released back on the UI thread. This ensures that the objects the imap url
@@ -1171,7 +1166,7 @@ bool nsImapProtocol::RunImapThreadMainLoop() {
   // close streams via UI thread if it's not already done
   if (m_imapProtocolSink) m_imapProtocolSink->CloseStreams();
 
-  m_imapMailFolderSink = nullptr;
+  SetMailFolderSink(nullptr);
   m_imapMailFolderSinkSelected = nullptr;
   m_imapMessageSink = nullptr;
 
@@ -1595,7 +1590,7 @@ void nsImapProtocol::ImapThreadMainLoop() {
       if (ProcessCurrentURL()) {
         // Another URL has been setup to run. Process it on next loop.
         m_nextUrlReadyToRun = true;
-        m_imapMailFolderSink = nullptr;
+        SetMailFolderSink(nullptr);
       } else {
         // No more URLs setup to run. Set idle pending if user has configured
         // idle and if a URL is not in progress and if the server has IDLE
@@ -1611,7 +1606,7 @@ void nsImapProtocol::ImapThreadMainLoop() {
           Log("ImapThreadMainLoop", nullptr, "idlePending set");
         } else {
           // if not idle used, don't need to remember folder sink
-          m_imapMailFolderSink = nullptr;
+          SetMailFolderSink(nullptr);
         }
       }
     } else {
@@ -1623,7 +1618,7 @@ void nsImapProtocol::ImapThreadMainLoop() {
         Idle();
         if (!m_idle) {
           // Server rejected IDLE. Treat like IDLE not enabled or available.
-          m_imapMailFolderSink = nullptr;
+          SetMailFolderSink(nullptr);
         }
         idlePending = false;
         sleepTime = PR_SecondsToInterval(kSleepTimeSeconds);
@@ -2031,6 +2026,14 @@ bool nsImapProtocol::ProcessCurrentURL() {
   }
 
   if (!DeathSignalReceived() && (NS_SUCCEEDED(GetConnectionStatus()))) {
+    // Use the connection's negotiated encoding before discovering mailboxes.
+    if (m_allowUTF8Accept) {
+      m_trashFolderPath = m_trashFolderPathUtf8;
+    } else {
+      CopyUTF16toMUTF7(NS_ConvertUTF8toUTF16(m_trashFolderPathUtf8),
+                       m_trashFolderPath);
+    }
+
     // if the server supports a language extension then we should
     // attempt to issue the language extension.
     if (GetServerStateParser().GetCapabilityFlag() & kHasLanguageCapability)
@@ -2149,7 +2152,7 @@ bool nsImapProtocol::ProcessCurrentURL() {
       NS_ReleaseOnMainThread("nsImapProtocol, copyState", copyState.forget());
     }
     // we might need this to stick around for IDLE support
-    m_imapMailFolderSink = imapMailFolderSink;
+    SetMailFolderSink(imapMailFolderSink);
     imapMailFolderSink = nullptr;
   } else
     MOZ_LOG(IMAP, LogLevel::Info, ("null imapMailFolderSink"));
@@ -2328,16 +2331,6 @@ nsresult nsImapProtocol::SendData(const char* dataBuffer,
 /////////////////////////////////////////////////////////////////////////////////////////////
 // Begin protocol state machine functions...
 //////////////////////////////////////////////////////////////////////////////////////////////
-
-// ProcessProtocolState - we override this only so we'll link - it should never
-// get called.
-
-nsresult nsImapProtocol::ProcessProtocolState(nsIURI* url,
-                                              nsIInputStream* inputStream,
-                                              uint64_t sourceOffset,
-                                              uint32_t length) {
-  return NS_OK;
-}
 
 class UrlListenerNotifierEvent : public mozilla::Runnable {
  public:
@@ -3333,9 +3326,6 @@ void nsImapProtocol::ProcessSelectedStateURL() {
           ProcessStoreFlags(messageIdString, bMessageIdsAreUids, ~msgFlags,
                             false);
         } break;
-        case nsIImapUrl::nsImapBiff:
-          PeriodicBiff();
-          break;
         case nsIImapUrl::nsImapOnlineCopy:
         case nsIImapUrl::nsImapOnlineMove: {
           nsCString messageIdString;
@@ -4631,50 +4621,6 @@ void nsImapProtocol::HeaderFetchCompleted() {
   m_hdrDownloadCache->ReleaseAll();
 
   if (m_imapMailFolderSink) m_imapMailFolderSink->HeaderFetchCompleted(this);
-}
-
-// Use the noop to tell the server we are still here, and therefore we are
-// willing to receive status updates. The recent or exists response from the
-// server could tell us that there is more mail waiting for us, but we need to
-// check the flags of the mail and the high water mark to make sure that we do
-// not tell the user that there is new mail when perhaps they have already read
-// it in another machine.
-
-void nsImapProtocol::PeriodicBiff() {
-  nsMsgBiffState startingState = m_currentBiffState;
-
-  if (GetServerStateParser().GetIMAPstate() ==
-      nsImapServerResponseParser::kFolderSelected) {
-    Noop();  // check the latest number of messages
-    int32_t numMessages = 0;
-    m_flagState->GetNumberOfMessages(&numMessages);
-    if (GetServerStateParser().NumberOfMessages() != numMessages) {
-      ImapUid highestUid = GetServerStateParser().HighestRecordedUID() + 1;
-      nsCString fetchStr;  // only update flags
-
-      uint32_t deleted = m_flagState->NumberOfDeletedMessages();
-      uint32_t added = numMessages;
-      if (!added || (added == deleted))  // empty keys, get them all
-        highestUid = 1;
-
-      // sprintf(fetchStr, "%ld:%ld", id, id +
-      // GetServerStateParser().NumberOfMessages() -
-      // fFlagState->GetNumberOfMessages());
-      AppendUid(fetchStr, highestUid);
-      fetchStr.AppendLiteral(":*");
-      FetchMessage(fetchStr, kFlags);
-      if ((m_flagState->GetHighestNonDeletedUID() >= highestUid) &&
-          m_flagState->IsLastMessageUnseen())
-        m_currentBiffState = nsIMsgFolder::nsMsgBiffState_NewMail;
-      else
-        m_currentBiffState = nsIMsgFolder::nsMsgBiffState_NoMail;
-    } else
-      m_currentBiffState = nsIMsgFolder::nsMsgBiffState_NoMail;
-  } else
-    m_currentBiffState = nsIMsgFolder::nsMsgBiffState_Unknown;
-
-  if (startingState != m_currentBiffState)
-    SendSetBiffIndicatorEvent(m_currentBiffState);
 }
 
 void nsImapProtocol::SendSetBiffIndicatorEvent(nsMsgBiffState newState) {
@@ -7326,11 +7272,9 @@ void nsImapProtocol::OnMoveFolderHierarchy(const char* sourceMailbox) {
 // the imap action is appropriate and if discovery is not in progress due to
 // a running "discoverallboxes" URL.
 void nsImapProtocol::FindMailboxesIfNecessary() {
-  // biff should not discover mailboxes
   nsImapAction imapAction;
   (void)m_runningUrl->GetImapAction(&imapAction);
-  if ((imapAction != nsIImapUrl::nsImapBiff) &&
-      (imapAction != nsIImapUrl::nsImapVerifylogon) &&
+  if ((imapAction != nsIImapUrl::nsImapVerifylogon) &&
       (imapAction != nsIImapUrl::nsImapDiscoverAllBoxesUrl) &&
       (imapAction != nsIImapUrl::nsImapUpgradeToSubscription) &&
       !GetSubscribingNow()) {
@@ -7978,7 +7922,7 @@ void nsImapProtocol::EndIdle(bool waitForResponse /* = true */) {
   // retry or signal a failed status when SetUrlState is called in
   // ProcessCurrentUrl to invoke nsIUrlListener.onStopRunningUrl.
   if (!waitForResponse || GetServerStateParser().LastCommandSuccessful())
-    m_imapMailFolderSink = nullptr;
+    SetMailFolderSink(nullptr);
 }
 
 void nsImapProtocol::Search(const char* searchCriteria, bool useUID,
@@ -8457,6 +8401,79 @@ nsresult nsImapProtocol::GetPassword(nsString& password,
     }
   }
   if (!password.IsEmpty()) m_lastPasswordSent = password;
+  return rv;
+}
+
+// Strip off any padding (see bug 230351).
+static nsDependentCSubstring StripBase64Padding(const nsACString& base64) {
+  uint32_t len = base64.Length();
+  while (len > 0 && base64[len - 1] == '=') len--;
+  return Substring(base64, 0, len);
+}
+
+nsresult nsImapProtocol::GetNextAuthToken(const nsACString& challenge,
+                                          nsACString& response) {
+  response.Truncate();
+
+  nsAutoCString input;
+  nsresult rv = Base64Decode(StripBase64Padding(challenge), input);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  void* outBuf = nullptr;
+  uint32_t outBufLen = 0;
+  rv = m_authModule->GetNextToken(input.IsEmpty() ? nullptr : input.get(),
+                                  input.Length(), &outBuf, &outBufLen);
+  NS_ENSURE_SUCCESS(rv, rv);
+  if (outBuf) {
+    nsresult encodeRv =
+        Base64Encode(static_cast<const char*>(outBuf), outBufLen, response);
+    free(outBuf);
+    NS_ENSURE_SUCCESS(encodeRv, encodeRv);
+  }
+  // May be NS_SUCCESS_AUTH_FINISHED.
+  return rv;
+}
+
+nsresult nsImapProtocol::DoGSSAPIStep1(const nsACString& service,
+                                       const char* username,
+                                       nsACString& response) {
+  m_authModule = nsIAuthModule::CreateInstance("sasl-gssapi");
+  NS_ENSURE_TRUE(m_authModule, NS_ERROR_FAILURE);
+
+  m_authModule->Init(service, nsIAuthModule::REQ_DEFAULT, u""_ns,
+                     NS_ConvertUTF8toUTF16(username), u""_ns);
+
+  // If this fails, then it means that we cannot do GSSAPI SASL.
+  return GetNextAuthToken(""_ns, response);
+}
+
+nsresult nsImapProtocol::DoGSSAPIStep2(const nsACString& challenge,
+                                       nsACString& response) {
+  // Cyrus SASL may send us zero length tokens, and expect them back.
+  return GetNextAuthToken(challenge, response);
+}
+
+nsresult nsImapProtocol::DoNtlmStep1(const nsACString& username,
+                                     const nsAString& password,
+                                     nsACString& response) {
+  // This fails in FIPS mode, where NTLM is disabled.
+  m_authModule = nsIAuthModule::CreateInstance("ntlm");
+  NS_ENSURE_TRUE(m_authModule, NS_ERROR_FAILURE);
+
+  m_authModule->Init(""_ns, 0, u""_ns, NS_ConvertUTF8toUTF16(username),
+                     PromiseFlatString(password));
+
+  return GetNextAuthToken(""_ns, response);
+}
+
+nsresult nsImapProtocol::DoNtlmStep2(const nsACString& challenge,
+                                     nsACString& response) {
+  // The server may have answered OK without sending a challenge.
+  nsresult rv = NS_ERROR_FAILURE;
+  if (!StripBase64Padding(challenge).IsEmpty()) {
+    rv = GetNextAuthToken(challenge, response);
+  }
+  if (NS_FAILED(rv)) response.AssignLiteral("*");
   return rv;
 }
 

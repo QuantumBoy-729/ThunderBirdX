@@ -4,6 +4,10 @@
 
 "use strict";
 
+const { startAxeMutationObserver } = ChromeUtils.importESModule(
+  "resource://testing-common/mail/AxeHelpers.sys.mjs"
+);
+
 const { AccountConfig } = ChromeUtils.importESModule(
   "resource:///modules/accountcreation/AccountConfig.sys.mjs"
 );
@@ -51,9 +55,16 @@ add_setup(async function () {
   advancedConfigButton = subview.querySelector(
     "#advancedConfigurationExchange"
   );
-  await subview.l10n.translateFragment(subview);
+  await translateAccountHubStep(subview);
 
-  registerCleanupFunction(() => {
+  const axeWatcher = await startAxeMutationObserver(tab.browser, {
+    autoFinish: false,
+    message: "Account Hub should have no accessibility violations",
+    specialPowers: SpecialPowers,
+  });
+
+  registerCleanupFunction(async () => {
+    await axeWatcher.finish();
     tabmail.closeOtherTabs(tabmail.tabInfo[0]);
   });
 });
@@ -101,9 +112,9 @@ async function selectAuthenticationMethod(optionId) {
 
   await SimpleTest.promiseFocus(browser.contentWindow);
   const popupPromise = BrowserTestUtils.waitForSelectPopupShown(window);
-  authenticationSelect.scrollIntoView({ behavior: "instant" });
+  authenticationSelect.select.scrollIntoView({ behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
-    authenticationSelect,
+    authenticationSelect.select,
     {},
     browser.contentWindow
   );
@@ -439,14 +450,14 @@ add_task(async function test_uncheckingDefaultOauthShowsCustomOptions() {
 
 add_task(async function test_ewsPasswordStillHidesDefaultOauth() {
   changeAccountType(graphCard);
-  const hiddenPromise = BrowserTestUtils.waitForAttribute(
-    "hidden",
-    oauthOptionsWrapperElement
-  );
   changeAccountType(ewsCard);
-  await hiddenPromise;
 
   await selectAuthenticationMethod("incomingAuthMethodCleartext");
+  await BrowserTestUtils.waitForMutationCondition(
+    oauthOptionsWrapperElement,
+    { attributes: true, attributeFilter: ["hidden"] },
+    () => oauthOptionsWrapperElement.hidden
+  );
 
   Assert.equal(
     authenticationSelect.value,

@@ -2,14 +2,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { getLazyTemplate } from "moz-src:///comm/mail/base/content/modules/TemplateLoader.mjs";
+import templateMarkup from "../../templates/address-book-sync.html" with { type: "text" };
 import { AccountHubStep } from "./account-hub-step.mjs";
 
 /**
  * Account Hub Address Book Sync Template
- * Template ID: #accountHubAddressBookSyncTemplate
- * (from accountHubAddressBookSyncTemplate.inc.xhtml)
  */
 class AddressBookSync extends AccountHubStep {
+  /** @type {DocumentFragment} */
+  static template;
+  static {
+    getLazyTemplate(this, templateMarkup);
+  }
+
   /**
    * Accounts container element.
    *
@@ -68,9 +74,10 @@ class AddressBookSync extends AccountHubStep {
 
     super.connectedCallback();
 
-    const template = document
-      .getElementById("accountHubAddressBookSyncTemplate")
-      .content.cloneNode(true);
+    const template = this.ownerDocument.importNode(
+      AddressBookSync.template,
+      true
+    );
     this.appendChild(template);
 
     this.#accountsContainer = this.querySelector(
@@ -92,6 +99,8 @@ class AddressBookSync extends AccountHubStep {
         return true;
       },
     });
+
+    this.#updateSelectAll();
   }
 
   /**
@@ -122,7 +131,8 @@ class AddressBookSync extends AccountHubStep {
    * states of the inputs.
    */
   #updateSelectAll() {
-    const allSelected = [...this.inputs].every(c => c.checked);
+    const inputs = [...this.inputs];
+    const allSelected = inputs.every(c => c.checked);
 
     this.#selectAllAddressBooksInput.checked = allSelected;
     this.#selectAllAddressBooksInput.indeterminate =
@@ -132,9 +142,15 @@ class AddressBookSync extends AccountHubStep {
       this.#selectAllAddressBooksLabel.querySelector("span"),
       allSelected ? "account-hub-deselect-all" : "account-hub-select-all"
     );
-    this.#selectAllAddressBooksInput.disabled = [...this.inputs].every(
-      c => c.disabled
-    );
+    this.#selectAllAddressBooksInput.disabled = inputs.every(c => c.disabled);
+
+    if (!inputs.length) {
+      this.#selectAllAddressBooksInput.removeAttribute("aria-controls");
+
+      return;
+    }
+
+    this.#selectAllAddressBooksInput.ariaControlsElements = inputs;
   }
 
   /**
@@ -152,10 +168,6 @@ class AddressBookSync extends AccountHubStep {
       this.#accountsContainer.append(this.#createInput(addressBook));
     }
 
-    this.#selectAllAddressBooksInput.setAttribute(
-      "aria-controls",
-      [...this.inputs].map(input => input.id).join(" ")
-    );
     this.#updateSelectAll();
   }
 

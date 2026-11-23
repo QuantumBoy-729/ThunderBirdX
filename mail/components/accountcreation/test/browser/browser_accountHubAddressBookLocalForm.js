@@ -4,6 +4,10 @@
 
 "use strict";
 
+const { startAxeMutationObserver } = ChromeUtils.importESModule(
+  "resource://testing-common/mail/AxeHelpers.sys.mjs"
+);
+
 const tabmail = document.getElementById("tabmail");
 let subView;
 
@@ -18,7 +22,17 @@ add_setup(async function () {
     "address-book-local-form"
   );
 
-  registerCleanupFunction(() => {
+  await setAccountHubStepTitle(subView, "account-hub-add-local-address-book");
+  await translateAccountHubStep(subView);
+
+  const axeWatcher = await startAxeMutationObserver(tab.browser, {
+    autoFinish: false,
+    message: "Account Hub should have no accessibility violations",
+    specialPowers: SpecialPowers,
+  });
+
+  registerCleanupFunction(async () => {
+    await axeWatcher.finish();
     tabmail.closeOtherTabs(tabmail.tabInfo[0]);
   });
 });

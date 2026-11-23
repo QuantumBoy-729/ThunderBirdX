@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, you can obtain one at http://mozilla.org/MPL/2.0/. */
 
+var { MailShutdown } = ChromeUtils.importESModule(
+  "resource://testing-common/mailnews/MailShutdown.sys.mjs"
+);
 var { MailServices } = ChromeUtils.importESModule(
   "resource:///modules/MailServices.sys.mjs"
 );
@@ -16,11 +19,13 @@ var { XPCOMUtils } = ChromeUtils.importESModule(
 do_get_profile();
 
 // Import the required setup scripts.
-/* import-globals-from ../../../test/resources/abSetup.js */
-load("../../../resources/abSetup.js");
+var { kCABData, kNormalPropertiesURI, kPABData, loadABFile } =
+  ChromeUtils.importESModule(
+    "resource://testing-common/mailnews/AddrBookTestUtils.sys.mjs"
+  );
 
 registerCleanupFunction(function () {
-  load("../../../resources/mailShutdown.js");
+  MailShutdown.simulate();
 });
 
 function promiseDirectoryRemoved(uri) {

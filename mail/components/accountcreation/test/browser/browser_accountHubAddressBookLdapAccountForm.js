@@ -4,6 +4,10 @@
 
 "use strict";
 
+const { startAxeMutationObserver } = ChromeUtils.importESModule(
+  "resource://testing-common/mail/AxeHelpers.sys.mjs"
+);
+
 const tabmail = document.getElementById("tabmail");
 let browser;
 let subview;
@@ -27,7 +31,17 @@ add_setup(async function () {
   hostname = subview.querySelector("#hostname");
   port = subview.querySelector("#port");
 
-  registerCleanupFunction(() => {
+  await setAccountHubStepTitle(subview, "account-hub-ldap-form");
+  await translateAccountHubStep(subview);
+
+  const axeWatcher = await startAxeMutationObserver(tab.browser, {
+    autoFinish: false,
+    message: "Account Hub should have no accessibility violations",
+    specialPowers: SpecialPowers,
+  });
+
+  registerCleanupFunction(async () => {
+    await axeWatcher.finish();
     tabmail.closeOtherTabs(tabmail.tabInfo[0]);
   });
 });
@@ -201,6 +215,7 @@ add_task(async function test_invalidPort() {
   hostname.value = "example.com";
 
   // Move to port input.
+  port.scrollIntoView({ block: "center" });
   EventUtils.synthesizeMouseAtCenter(port, {}, subview.documentGlobal);
   port.focus();
   const updated = BrowserTestUtils.waitForEvent(
@@ -233,7 +248,7 @@ add_task(async function test_showHideAdvancedConfig() {
   );
   const simpleConfigButton = subview.querySelector("#simpleConfigurationLdap");
 
-  advancedConfigButton.scrollIntoView({ behavior: "instant" });
+  advancedConfigButton.scrollIntoView({ block: "center", behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
     advancedConfigButton,
     {},
@@ -275,6 +290,7 @@ add_task(async function test_showHideAdvancedConfig() {
 
   while (BrowserTestUtils.isHidden(advancedConfigButton)) {
     info("Trying to scroll simple button into view");
+    simpleConfigButton.scrollIntoView({ block: "center" });
     EventUtils.synthesizeMouseAtCenter(
       simpleConfigButton,
       {},
@@ -307,7 +323,7 @@ add_task(async function test_maxResultsValidity() {
   );
   const simpleConfigButton = subview.querySelector("#simpleConfigurationLdap");
 
-  advancedConfigButton.scrollIntoView({ behavior: "instant" });
+  advancedConfigButton.scrollIntoView({ block: "center", behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
     advancedConfigButton,
     {},
@@ -333,7 +349,7 @@ add_task(async function test_maxResultsValidity() {
   const maxResults = subview.querySelector("#maxResults");
 
   // Move to max results input.
-  maxResults.scrollIntoView({ behavior: "instant" });
+  maxResults.scrollIntoView({ block: "center", behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(maxResults, {}, subview.documentGlobal);
 
   let updated = BrowserTestUtils.waitForEvent(
@@ -417,6 +433,7 @@ add_task(async function test_captureStateSimple() {
     false,
     event => event.target.checked
   );
+  sslSwitch.scrollIntoView({ block: "center" });
   EventUtils.synthesizeMouseAtCenter(sslSwitch, {}, subview.documentGlobal);
   await checkEvent;
 
@@ -439,7 +456,7 @@ add_task(async function test_captureStateAdvanced() {
     "#advancedConfigurationLdap"
   );
   // Show advanced configuration
-  advancedConfigButton.scrollIntoView({ behavior: "instant" });
+  advancedConfigButton.scrollIntoView({ block: "center", behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
     advancedConfigButton,
     {},
@@ -527,7 +544,7 @@ add_task(async function test_captureStateAdvanced() {
   const searchFilterInput = subview.querySelector("#search");
   searchFilterInput.value = "Test Filter";
 
-  maxResultsInput.scrollIntoView({ behavior: "instant" });
+  maxResultsInput.scrollIntoView({ block: "center", behavior: "instant" });
   EventUtils.synthesizeMouseAtCenter(
     maxResultsInput,
     {},

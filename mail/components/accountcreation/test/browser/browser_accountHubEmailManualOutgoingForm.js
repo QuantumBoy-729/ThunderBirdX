@@ -4,6 +4,10 @@
 
 "use strict";
 
+const { startAxeMutationObserver } = ChromeUtils.importESModule(
+  "resource://testing-common/mail/AxeHelpers.sys.mjs"
+);
+
 const { AccountConfig } = ChromeUtils.importESModule(
   "resource:///modules/accountcreation/AccountConfig.sys.mjs"
 );
@@ -24,7 +28,17 @@ add_setup(async function () {
     "email-manual-outgoing-form"
   );
 
-  registerCleanupFunction(() => {
+  await setAccountHubStepTitle(subview, "account-hub-email-setup-outgoing");
+  await translateAccountHubStep(subview);
+
+  const axeWatcher = await startAxeMutationObserver(tab.browser, {
+    autoFinish: false,
+    message: "Account Hub should have no accessibility violations",
+    specialPowers: SpecialPowers,
+  });
+
+  registerCleanupFunction(async () => {
+    await axeWatcher.finish();
     tabmail.closeOtherTabs(tabmail.tabInfo[0]);
   });
 });

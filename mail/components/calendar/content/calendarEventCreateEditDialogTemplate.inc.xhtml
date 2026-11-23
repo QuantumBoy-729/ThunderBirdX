@@ -72,6 +72,20 @@
           data-subview="main"
         >
           <div class="calendar-event-create-edit-dialog-rows">
+            #include calendarEventVideoRowTemplate.inc.xhtml
+            #include calendarEventGuestsRowTemplate.inc.xhtml
+            <calendar-dialog-navigation-row
+              id="descriptionNavigationRow"
+              subview-id="calendarEventCreateEditDescriptionSubview"
+            >
+              <img class="icon-description" slot="icon" src="" alt="" />
+              <span
+                slot="label"
+                data-l10n-id="calendar-event-add-description"
+              ></span>
+              <img class="icon-nav-right" slot="action" src="" alt="" />
+              <span class="calendar-event-description-preview"></span>
+            </calendar-dialog-navigation-row>
             #include calendarEventCategoryRowTemplate.inc.xhtml
           </div>
         </section>
@@ -118,6 +132,29 @@
         ></button>
       </footer>
     </div>
-    #include calendarEventCreateEditDescriptionSubviewTemplate.inc.xhtml
+    <calendar-event-description-subview
+      id="calendarEventCreateEditDescriptionSubview"
+      initial-focus-id="descriptionEditor"
+      resize-to-content=""
+      hidden="hidden"
+    >
+      <div class="calendar-description-content" slot="main">
+        <div class="calendar-description-heading">
+          <img class="icon-description" src="" alt="" />
+          <h2
+            id="descriptionHeading"
+            data-l10n-id="calendar-dialog-description-label"
+          ></h2>
+        </div>
+        <div
+          id="descriptionEditor"
+          class="calendar-description-editor"
+          role="region"
+          aria-labelledby="descriptionHeading"
+          tabindex="-1"
+        ></div>
+      </div>
+    </calendar-event-description-subview>
+    #include calendarEventCreateEditGuestsSubviewTemplate.inc.xhtml
   </calendar-dialog-subview-manager>
 </html:template>

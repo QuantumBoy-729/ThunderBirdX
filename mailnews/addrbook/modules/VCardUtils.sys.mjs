@@ -110,19 +110,34 @@ export var VCardUtils = {
    * @returns {string}
    */
   translateVCard21(vCard) {
-    if (!/\bVERSION:2.1\b/i.test(vCard)) {
+    if (!/\bVERSION:2\.1\b/i.test(vCard)) {
       return vCard;
     }
 
+    // Join quoted-printable wrapped lines together. This regular expression
+    // matches consecutive lines that end with `=`, and they are joined from
+    // the first quoted-printable marker on. This is done first, so that the
+    // wrapped lines aren't taken for properties.
+    vCard = vCard.replace(/(?:^|(?<=[\r\n]))(?:[^\r\n]*=\r?\n)+/g, lines => {
+      const start = lines.search(/;(?:ENCODING=)?QUOTED-PRINTABLE[;:]/i);
+      if (start == -1) {
+        return lines;
+      }
+      return lines.slice(0, start) + lines.slice(start).replace(/=\r?\n/g, "");
+    });
+
     // Convert known type parameters to valid vCard 4.0, ignore unknown ones.
-    vCard = vCard.replace(/\n(([A-Z]+)(;[\w-]*)+):/gi, (match, key) => {
-      const parts = key.split(";");
+    // A parameter value can be quoted, and contain ; and : then. A quote
+    // which isn't closed on the same line is taken as it is.
+    const property =
+      /\n(([A-Z]+)(;(?:[^;:"\r\n]|"[^"\r\n]*"|"(?![^"\r\n]*"))*)+):/gi;
+    vCard = vCard.replace(property, (match, key) => {
+      const parts = key.match(/(?:[^;"]|"[^"]*"|"(?![^"]*"))+/g);
       const newParts = [parts[0]];
       for (let i = 1; i < parts.length; i++) {
-        if (parts[i] == "") {
-          continue;
-        }
-        if (
+        if (parts[i].includes("=")) {
+          newParts.push(parts[i]);
+        } else if (
           ["HOME", "WORK", "FAX", "PAGER", "CELL"].includes(
             parts[i].toUpperCase()
           )
@@ -137,16 +152,8 @@ export var VCardUtils = {
       return "\n" + newParts.join(";") + ":";
     });
 
-    // Join quoted-printable wrapped lines together. This regular expression
-    // only matches lines that are quoted-printable and end with `=`, plus any
-    // following lines that also end with `=`.
-    vCard = vCard.replace(
-      /;ENCODING=QUOTED-PRINTABLE[;:](?:[^\r\n]*=\r?\n)+/gi,
-      match => match.replace(/=\r?\n/g, "")
-    );
-
     // Strip the version.
-    return vCard.replace(/(\r?\n)VERSION:2.1\r?\n/i, "$1");
+    return vCard.replace(/(\r?\n)VERSION:2\.1\r?\n/i, "$1");
   },
   /**
    * Return a new AddrBookCard from the provided vCard string.
@@ -740,14 +747,14 @@ export class VCardProperties {
    * @returns {?VCardProperties}
    */
   static fromVCard(vCard, { isGoogleCardDAV = false } = {}) {
-    const vCards = vCard.match(/BEGIN:VCARD[\s\S]*?END:VCARD/gi);
-    if (!vCards) {
+    const start = vCard.search(/BEGIN:VCARD/i);
+    const card =
+      start != -1 &&
+      /^BEGIN:VCARD[\s\S]*?END:VCARD/i.exec(vCard.slice(start))?.[0];
+    if (!card) {
       return null;
     }
-    if (vCards.length > 1) {
-      console.warn(`Card data had more than one vCard ${vCard}`);
-    }
-    vCard = VCardUtils.translateVCard21(vCards[0]);
+    vCard = VCardUtils.translateVCard21(card);
     // Google joins the X-APPLE-OMIT-YEAR parameter (see VCardUtils.parseDate)
     // to the VALUE parameter with a comma, as in
     // BDAY;VALUE=DATE,X-APPLE-OMIT-YEAR=1604:1604-04-15.

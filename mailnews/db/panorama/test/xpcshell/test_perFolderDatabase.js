@@ -204,6 +204,16 @@ add_task(async function testFolderMethods() {
   // Reset unread messages.
   folderDatabase.markRead(3, false, null);
   folderDatabase.markRead(4, false, null);
+
+  // Test listing offline messages.
+  Assert.deepEqual(folderDatabase.listAllOfflineMsgs(), []);
+  folderDatabase.markOffline(2, true, null);
+  folderDatabase.markOffline(4, true, null);
+  Assert.deepEqual(folderDatabase.listAllOfflineMsgs(), [2, 4]);
+  folderDatabase.markOffline(2, false, null);
+  Assert.deepEqual(folderDatabase.listAllOfflineMsgs(), [4]);
+  folderDatabase.markOffline(4, false, null);
+  Assert.deepEqual(folderDatabase.listAllOfflineMsgs(), []);
 });
 
 add_task(async function testFolderInfo() {
@@ -242,6 +252,33 @@ add_task(async function testFolderInfo() {
   Assert.equal(folderA.getTotalMessages(false), 4);
   Assert.equal(folderInfo.numUnreadMessages, 2);
   Assert.equal(folderA.getNumUnread(false), 2);
+});
+
+/**
+ * Test that cache size management functions are implemented.
+ */
+add_task(async function testCacheSize() {
+  const folderA = rootFolder.getChildNamed("folderA");
+  const folderDatabaseA = database.openFolderDB(folderA, false);
+
+  const size = folderDatabaseA.msgHdrCacheSize;
+  Assert.greater(
+    size,
+    0,
+    "the cache getter should return a value greater than 0"
+  );
+
+  folderDatabaseA.msgHdrCacheSize = 1000;
+  Assert.ok(
+    true,
+    "setting the cache size of the folder shouldn't throw an error"
+  );
+
+  Assert.equal(
+    size,
+    folderDatabaseA.msgHdrCacheSize,
+    "the dummy value returned by the getter shouldn't have changed"
+  );
 });
 
 add_task(async function testFolderProperties() {
@@ -576,4 +613,55 @@ add_task(async function testListener() {
   );
   // TODO
   //Assert.equal(headerRemoved.getStringProperty("keywords"), "");
+});
+
+// Test the methods dealing with offline ops.
+add_task(async function testOfflineOps() {
+  const folder = await rootFolder.createSubfolderAsync("offlineOpsTest");
+
+  const db = folder.msgDatabase;
+  Assert.equal(
+    db.getOfflineOpForKey(1234, false),
+    null,
+    "Fetching non-existant op should return null."
+  );
+  Assert.deepEqual(db.listAllOfflineOpIds(), []);
+  Assert.equal(db.hasOfflineActivity(), false);
+
+  const op1 = db.getOfflineOpForKey(1234, true);
+  Assert.ok(op1, "Should be able to create an op");
+  Assert.equal(db.hasOfflineActivity(), true);
+  Assert.equal(db.getOfflineOpForKey(1234, false), op1);
+  Assert.deepEqual(db.listAllOfflineOpIds(), [1234]);
+
+  // Add op2 as kMsgMoved ("message has been moved out of the folder").
+  const op2 = db.getOfflineOpForKey(9999, true);
+  Assert.ok(op2, "Should be able to create another op");
+  op2.setMsgMovedOp();
+  Assert.equal(db.getOfflineOpForKey(9999, false), op2);
+  Assert.deepEqual(db.listAllOfflineOpIds().toSorted(), [1234, 9999]);
+
+  Assert.deepEqual(
+    db.listAllOfflineDeletes(),
+    [9999],
+    "kMsgMoved counts as a message deletion"
+  );
+
+  db.removeOfflineOp(op1);
+  Assert.equal(db.getOfflineOpForKey(1234, false), null, "op1 should be gone");
+  Assert.deepEqual(db.listAllOfflineOpIds(), [9999]);
+  Assert.equal(
+    db.hasOfflineActivity(),
+    true,
+    "DB should still have offline ops"
+  );
+
+  db.removeOfflineOp(op2);
+  Assert.equal(db.getOfflineOpForKey(9999, false), null, "op2 should be gone");
+  Assert.deepEqual(db.listAllOfflineOpIds(), []);
+  Assert.equal(
+    db.hasOfflineActivity(),
+    false,
+    "DB should not have any offline ops left"
+  );
 });

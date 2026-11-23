@@ -12,7 +12,6 @@
 
 #include "nsIImapUrl.h"
 
-#include "nsMsgProtocol.h"
 #include "nsIStreamListener.h"
 #include "nsIAsyncOutputStream.h"
 #include "nsIAsyncInputStream.h"
@@ -20,6 +19,9 @@
 #include "nsIProgressEventSink.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsISocketTransport.h"
+#include "nsIAuthModule.h"
+#include "nsICancelable.h"
+#include "nsIOutputStream.h"
 
 // UI Thread proxy helper
 #include "nsIImapProtocolSink.h"
@@ -144,12 +146,10 @@ class nsIMAPMailboxInfo {
 // clang-format on
 
 /**
- * nsImapProtocol is, among other things, the underlying nsIChannel
- * implementation for the IMAP protocol. However, it's usually hidden away
- * behind nsImapMockChannel objects. It also represents the 'real' connection
- * to the IMAP server - it maintains the nsISocketTransport.
+ * nsImapProtocol represents the 'real' connection to the IMAP server - it
+ * maintains the nsISocketTransport. It isn't a channel itself.
  * Because there can be multiple IMAP requests queued up, NS_NewChannel()
- * will return nsImapMockChannel objects instead, to keep the request in a
+ * will return nsImapMockChannel objects, to keep the request in a
  * holding pattern until the connection is free. At which time the mock
  * channel will just forward calls onward to the nsImapProtocol.
  *
@@ -176,7 +176,6 @@ class nsIMAPMailboxInfo {
 class nsImapProtocol : public nsIImapProtocol,
                        public nsIInputStreamCallback,
                        public nsSupportsWeakReference,
-                       public nsMsgProtocol,
                        public nsIImapProtocolSink,
                        public nsIMsgAsyncPromptListener,
                        public nsIProtocolProxyCallback {
@@ -188,15 +187,10 @@ class nsImapProtocol : public nsIImapProtocol,
     std::atomic<int32_t> retryIntervalS;
   };
 
-  NS_DECL_ISUPPORTS_INHERITED
+  NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSIINPUTSTREAMCALLBACK
   NS_DECL_NSIPROTOCOLPROXYCALLBACK
   nsImapProtocol();
-
-  virtual nsresult ProcessProtocolState(nsIURI* url,
-                                        nsIInputStream* inputStream,
-                                        uint64_t sourceOffset,
-                                        uint32_t length) override;
 
   //////////////////////////////////////////////////////////////////////////////////
   // we support the nsIImapProtocol interface
@@ -393,12 +387,23 @@ class nsImapProtocol : public nsIImapProtocol,
   nsCString m_serverKey;
   char* m_dataOutputBuf;
   RefPtr<nsMsgLineStreamBuffer> m_inputStreamBuffer;
+  nsCString m_trashFolderPathUtf8;
   nsCString m_trashFolderPath;
   // Resolved lazily and reset for each URL or mailbox discovery.
   nsCString m_canonicalTrashFolderPath;
 
   /** The socket connection to the IMAP server. */
   nsCOMPtr<nsISocketTransport> m_transport;
+  nsCOMPtr<nsIOutputStream> m_outputStream;
+  nsCOMPtr<nsICancelable> m_proxyRequest;
+  nsCOMPtr<nsIStreamListener> m_channelListener;
+  uint32_t m_flags = 0;
+
+  /** The NTLM or GSSAPI module for the authentication in progress. */
+  nsCOMPtr<nsIAuthModule> m_authModule;
+  /** Used to prefill the password prompt. */
+  nsString m_lastPasswordSent;
+
   nsCOMPtr<nsITransportSecurityInfo> m_securityInfo;
 
   /** Stream to handle data coming in from the IMAP server. */
@@ -443,6 +448,8 @@ class nsImapProtocol : public nsIImapProtocol,
   bool m_idleResponseReadyToHandle;
   nsWeakPtr m_server;
 
+  // Written on both the main thread and the IMAP thread. Every write must
+  // hold mMonitor; use SetMailFolderSink() on the IMAP thread.
   RefPtr<ImapMailFolderSinkProxy> m_imapMailFolderSink;
   RefPtr<ImapMailFolderSinkProxy> m_imapMailFolderSinkSelected;
   RefPtr<ImapMessageSinkProxy> m_imapMessageSink;
@@ -452,6 +459,10 @@ class nsImapProtocol : public nsIImapProtocol,
 
   // helper function to setup imap sink interface proxies
   nsresult SetupSinkProxy();
+  void SetMailFolderSink(ImapMailFolderSinkProxy* aSink) {
+    mozilla::ReentrantMonitorAutoEnter mon(mMonitor);
+    m_imapMailFolderSink = aSink;
+  }
   // End thread support stuff
   nsresult LoadImapUrlInternal();
 
@@ -467,7 +478,6 @@ class nsImapProtocol : public nsIImapProtocol,
   virtual void ParseIMAPandCheckForNewMail(const char* commandString = nullptr,
                                            bool ignoreBadNOResponses = false);
   // biff
-  void PeriodicBiff();
   void SendSetBiffIndicatorEvent(nsMsgBiffState newState);
 
   // folder opening and listing header functions
@@ -651,7 +661,17 @@ class nsImapProtocol : public nsIImapProtocol,
   bool IsInteractive();
   // End Process AuthenticatedState Url helper methods
 
-  virtual char const* GetType() override { return "imap"; }
+  bool TestFlag(uint32_t flag) { return flag & m_flags; }
+  void SetFlag(uint32_t flag) { m_flags |= flag; }
+  void ClearFlag(uint32_t flag) { m_flags &= ~flag; }
+
+  nsresult GetNextAuthToken(const nsACString& challenge, nsACString& response);
+  nsresult DoNtlmStep1(const nsACString& username, const nsAString& password,
+                       nsACString& response);
+  nsresult DoNtlmStep2(const nsACString& challenge, nsACString& response);
+  nsresult DoGSSAPIStep1(const nsACString& service, const char* username,
+                         nsACString& response);
+  nsresult DoGSSAPIStep2(const nsACString& challenge, nsACString& response);
 
   // Quota support
   void GetQuotaDataIfSupported(const char* aBoxName);
@@ -765,6 +785,10 @@ class nsImapProtocol : public nsIImapProtocol,
   nsresult TransportStartTLS();
   void GetTransportSecurityInfo(nsITransportSecurityInfo** aSecurityInfo);
 };
+
+inline nsISupports* ToSupports(nsImapProtocol* aProtocol) {
+  return static_cast<nsIImapProtocol*>(aProtocol);
+}
 
 // This small class is a "mock" channel because it is a mockery of the imap
 // channel's implementation... it's a light weight channel that we can return to
